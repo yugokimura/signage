@@ -4,22 +4,20 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <meta http-equiv="Content-Security-Policy" content="default-src * data: gap: content: https://ssl.gstatic.com; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'">
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!--
-    <script src="components/loader.js"></script>
-    <link rel="stylesheet" href="components/loader.css">
-    <link rel="stylesheet" href="css/style.css">
-    <script src="js/main.js" async>
-    </script>
-  -->
-<script type="text/javascript">
+    <script type="module">
+      import React from "https://esm.sh/react@19.0.0-beta-04b058868c-20240508/?dev"
+      import ReactDOMClient from "https://esm.sh/react-dom@19.0.0-beta-04b058868c-20240508/client/?dev"
 
-</script>
+      window.onload = () => {
+        const rootElement = ReactDOMClient.createRoot(document.getElementById('root'));
+        const ints = [1, 2, 3,4,5];
+        const elements = ints.map(i => React.createElement('li', { key : "ul-test-" + i}, i));
+        rootElement.render(React.createElement('ul', {}, elements));
+      };
+    </script>
 </head>
 <body>
-<h1>test</h1>
-<h2>test2</h2>
+<div id="root">root div</div>
 <script>
 function MyButton() {
   return (
