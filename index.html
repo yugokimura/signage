@@ -3,19 +3,17 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="./manifest.json" />
     <title>TEST</title>
-    <script type="module">
-      //import React from "https://esm.sh/react@19.0.0-beta-04b058868c-20240508/?dev"
-      //import ReactDOMClient from "https://esm.sh/react-dom@19.0.0-beta-04b058868c-20240508/client/?dev"
-
-      //window.onload = () => {
-        //const rootElement = ReactDOMClient.createRoot(document.getElementById('root'));
-        //const ints = [1, 2, 3,4,5];
-        //const elements = ints.map(i => React.createElement('li', { key : "ul-test-" + i}, i));
-        //rootElement.render(React.createElement('ul', {}, elements));
-      //};
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script>
+      window.addEventListener("load", () => {
+        //service workerの登録
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.register("./sw.js");
+        }
+      });
     </script>
-
 <style type="text/css">
 body {
   background: rgb(0,5,85);
@@ -124,7 +122,7 @@ div {
 
 #todaysWeather {
   display: flex;
-  background-image: url(https://www.jma.go.jp/bosai/forecast/img/101.svg);
+  /* background-image: url(https://www.jma.go.jp/bosai/forecast/img/101.svg); */
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
@@ -154,24 +152,6 @@ div {
   content: '℃';
   font-size:0.5em;
 }
-/* #todaysMaxTemp::before {
-  content : url(./low-temperature-icon.svg);
-  width:20px;
-  height:20px;
-  color: white;
-  margin-top:-20px;
-  margin-right:10px;
-} */
-#todaysMinTemp {
-  display: flex;
-  flex-grow: 1;
-  color: #c1adf8;
-  font-size: 3em;
-  font-weight: bold;
-  align-items: center;
-  overflow: hidden;
-  display: none;
-}
 
 
 #widgetRain {
@@ -192,6 +172,7 @@ div {
   margin: 0 10px;
   width: 100%;
   height: 100%;
+  display: flex;
 }
 .boxRain .time{
   display: flex;
@@ -202,6 +183,9 @@ div {
   font-size:2em;
   color:  #153D70ff;
 }
+.boxRain .time::after {
+  content: '時';
+}
 .boxRain .perc{
   display: flex;
   flex-grow: 1;
@@ -211,6 +195,9 @@ div {
   font-weight: bold;
   font-size:3.5em;
   color:  #153D70ff;
+}
+.boxRain .perc::after {
+  content: '%';
 }
 
 
@@ -243,7 +230,7 @@ div {
 .boxDate i.weather {
   display: flex;
   flex-grow: 2;
-  background-image: url(https://www.jma.go.jp/bosai/forecast/img/115.svg);
+  /* background-image: url(https://www.jma.go.jp/bosai/forecast/img/115.svg); */
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
@@ -266,13 +253,6 @@ div {
   color: #FF5050;
   padding: 0 5px 0 0;
 }
-/* .boxDate .boxSmall .maxTemp::before {
-  content : url(./high-temperature-icon.svg);
-  width:12px;
-  height:12px;
-  margin-top:5px;
-  margin-right:10px;
-} */
 .boxDate .boxSmall .maxTemp::after {
   content: '℃';
   font-size:.5em;
@@ -286,13 +266,6 @@ div {
   color: #51A0FF;
   padding: 0 0 0 5px;
 }
-/* .boxDate .boxSmall .lowTemp::before {
-  content : url(./low-temperature-icon.svg);
-  width:12px;
-  height:12px;
-  margin-top:5px;
-  margin-right:10px;
-} */
 .boxDate .boxSmall .lowTemp::after {
   content: '℃';
   font-size:.5em;
@@ -306,6 +279,12 @@ div {
   font-weight: bold;
   color:#ffffff;
 }
+.boxDate p.perc::after {
+  content: '%';
+  font-size:1em;
+}
+#boxRain { display: none;}
+#boxDate { display: none;}
 </style>
 </head>
 <body>
@@ -316,10 +295,8 @@ div {
       <div id="widgetWeather" class="widget">
         <h2 class="h2">本日の気温</h2>
         <div class="boxRow boxInner">
-          <!-- <i id="todaysWeather"></i> -->
           <div class="boxColumn">
-            <p id="todaysMaxTemp">17</p>
-            <p id="todaysMinTemp">10</p>
+            <p id="todaysMaxTemp">-</p>
           </div>
         </div>
       </div>
@@ -331,31 +308,47 @@ div {
       </div>
       <div id="widgetRain" class="widget">
         <h2 class="h2">降水確率</h2>
-        <div class="boxRow">
+        <div id="boxRains" class="boxRow">
+          <div id="boxRain" class="boxRain boxColumn">
+            <p class="time">-</p>
+            <p class="perc">-</p>
+          </div>
+<!--
           <div class="boxRain boxColumn">
             <p class="time">0-6時</p>
-            <p class="perc">10%</p>
+            <p class="perc">-</p>
           </div>
           <div class="boxRain boxColumn">
             <p class="time">6-12時</p>
-            <p class="perc">10%</p>
+            <p class="perc">-</p>
           </div>
           <div class="boxRain boxColumn">
             <p class="time">12-18時</p>
-            <p class="perc">10%</p>
+            <p class="perc">-</p>
           </div>
           <div class="boxRain boxColumn">
             <p class="time">18-0時</p>
-            <p class="perc">10%</p>
+            <p class="perc">-</p>
           </div>
+-->
         </div>
       </div>
     </div>
     <div id="bottom">
 
       <div  id="widgetWeeklyWeather" class="widget">
-        <div class="boxDates boxRow">
+        <div id="boxDates" class="boxDates boxRow">
 
+          <div id="boxDate" class="boxDate boxColumn">
+            <p class="date">-</p>
+            <i class="weather"></i>
+            <div class="boxSmall">
+              <p class="maxTemp"></p>
+              <p class="lowTemp"></p>
+            </div>
+            <p class="perc"></p>
+          </div>
+<!-- 
           <div class="boxDate boxColumn">
             <p class="date">8日(火)</p>
             <i class="weather"></i>
@@ -424,96 +417,249 @@ div {
               <p class="lowTemp">10</p>
             </div>
             <p class="perc">10%</p>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
   </div>
 </section>
-<div id="root"></div>
+<script type="text/javascript">
+
+  const WEATHER_API_URL = 'https://www.jma.go.jp/bosai/forecast/data/forecast/130000.json';
+  const WEATHER_SVG_URL = 'https://www.jma.go.jp/bosai/forecast/img/${weatherCode}.svg';
+
+$(document).ready( () => {
+
+  let weeklyData = [];
+
+  $.ajax({
+    url  : WEATHER_API_URL,
+    type : 'GET',
+    data : null,
+  }).done( data => {
+    console.log(data);
+    console.log('-----------------')
 
 
-<script type="module">
-  import React from "https://esm.sh/react@beta?dev";
-  import ReactDOM from "https://esm.sh/react-dom@beta?dev";
-  import ReactDOMClient from "https://esm.sh/react-dom@beta/client?dev";
-  // import ReactDOMServer from "https://esm.sh/react-dom@beta/server.browser?dev";
+    weeklyData[0] = {};
+    weeklyData[1] = {};
 
-  window.React = React;
-  window.ReactDOM = ReactDOM;
-  window.ReactDOMClient = ReactDOMClient;
-  // window.ReactDOMServer = ReactDOMServer;
-</script>
+    // timeSeries[0]
+    const ts0Area = data[0].timeSeries[0].areas[0];
+    const ts0TimeZone = data[0].timeSeries[0].timeDefines;
 
-<script type="module">
-////////////////////////////////////////////////////
+    // 今日の日付
+    const today = new Date();　// 今日の日付取得
+    const dateTime = new Date(ts0TimeZone[0]);
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    const date  = today.getDate();
+    const days = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日" , "金曜日", "土曜日"]
+    const day = days[today.getDay()];
+    const hour = today.getHours();
+    const min = today.getMinutes();
+    const sec = today.getSeconds();
+    $('#head').text(`${year}年${month}月${date}日(${day}) ${hour}時${min}分`);
 
-const resource = (async() => {
-  const r = await fetch('https://www.jma.go.jp/bosai/forecast/data/forecast/130000.json')
-  return await r.json()
-})()
 
-//
-const Inner = props => {
-  const json = React.use(resource)
-  console.log(json);
-  const dailyForecastArea = json[0].timeSeries[0].areas[0];
-  const dailyForecastTimeZone = json[0].timeSeries[0].timeDefines;
+    const dateTimeTomorrow = new Date(ts0TimeZone[0]);
+    dateTimeTomorrow.setDate(dateTimeTomorrow.getDate() + 1);
 
-  console.log(dailyForecastArea)
-  console.log(dailyForecastTimeZone)
+      // 今日・明日のtimZoneを格納
+    weeklyData[0].timeZone = dateTime;
+    weeklyData[1].timeZone = dateTimeTomorrow;
 
-  //https://www.jma.go.jp/bosai/forecast/img/101.svg
+    // 本日の天気
+    const weatherSVG = WEATHER_SVG_URL.replace('${weatherCode}', ts0Area.weatherCodes[0]);
+    $('#todaysWeather').css('background-image', `url(${weatherSVG})` );
+    console.log(weatherSVG);
 
-  // 格納された日付配列を起点にデータを形成
-  dailyForecastTimeZone.forEach( (timeZone, i) => {
-    let date = new Date(timeZone)
-    const weatherCode = dailyForecastArea.weatherCodes[i];
-    const weatherCodeUrl = `https://www.jma.go.jp/bosai/forecast/img/${weatherCode}.svg`;
-    //document.write('<img src="' + weatherCodeUrl + '" style="zoom:2"/>');
+    // 今日・明日の天気を格納
+    weeklyData[0].weatherCode = ts0Area.weatherCodes[0];
+    weeklyData[1].weatherCode = ts0Area.weatherCodes[1];
+
+    // timeSeries[1]
+    const ts1Area = data[0].timeSeries[1].areas[0];
+    const ts1TimeZone = data[0].timeSeries[1].timeDefines;
+
+    // 降水確率
+    const boxRain = $('#boxRain');
+    let tempTodays = [];
+    let tempTomorrows = [];
+
+    ts1TimeZone.forEach( (timeZone, i) => {
+      const dataTz = new Date(timeZone);
+
+      let tomorrowTz =  new Date();
+      tomorrowTz.setDate(tomorrowTz.getDate() + 1); 
+  
+      let boxRainClone = boxRain.clone();
+      boxRainClone.attr('id', `boxRain${i}`)
+
+      // 今日の場合
+      if ( dataTz.getDate() == today.getDate() ) {
+        boxRainClone
+        .find('.time').text(`今日${dataTz.getHours()}`).end()
+        .find('.perc').text(ts1Area.pops[i])
+        
+        tempTodays.push(ts1Area.pops[i]);
+
+
+      // 翌日の場合
+      } else if ( dataTz.getDate() ==  tomorrowTz.getDate() ) {
+
+        boxRainClone
+        .find('.time').text(`翌日${dataTz.getHours()}`).end()
+        .find('.perc').text(ts1Area.pops[i])
+
+        tempTomorrows.push(ts1Area.pops[i]);
+
+      // 翌々日移行の場合
+      } else {
+        boxRainClone
+        .find('.time').text(`翌々日${dataTz.getHours()}`).end()
+        .find('.perc').text(ts1Area.pops[i])
+      }
+
+      $('#boxRains').append(boxRainClone);
+
+    });
+
+    // 本日と翌日の降水確率の挿入
+    weeklyData[0].perc = '-';
+    weeklyData[1].perc = '-';
+    if(tempTodays.length > 0) {
+      const tempTodaysSum = tempTodays.reduce(function (acc, cur) {
+        return acc + cur;
+      });
+      weeklyData[0].perc = tempTodaysSum / tempTodays.length;
+    }
+
+    if(tempTomorrows.length > 0) {
+      const tempTomorrowsSum = tempTomorrows.reduce(function (acc, cur) {
+        return acc + cur;
+      });
+      weeklyData[1].perc = tempTomorrowsSum / tempTomorrows.length;
+    }
+
     
+    // timeSeries[2]
+    const ts2Area = data[0].timeSeries[2].areas[0];
+    const ts2TimeZone = data[0].timeSeries[2].timeDefines;
+
+    // 本日の気温
+    const temps = ts2Area.temps;
+    const s2TimeZone = ts2TimeZone;
+    $('#todaysMaxTemp').text(temps[1]);
+
+
+    weeklyData[0].max = null;
+    weeklyData[0].min = null;
+    weeklyData[1].max = null;
+    weeklyData[1].min = null;
+
+    ts2TimeZone.forEach( (timeZone, i) => {
+      const dataTz = new Date(timeZone);
+      let tomorrowTz =  new Date();
+      tomorrowTz.setDate(tomorrowTz.getDate() + 1);
+
+      // 今日の場合
+      if ( dataTz.getDate() == today.getDate() ) {
+        $('#todaysMaxTemp').parent().parent().parent().find('.h2').text("今日の天気");
+
+        if( weeklyData[0].max == null ) {
+          weeklyData[0].max = temps[i];
+          weeklyData[0].min = temps[i];
+        } else if ( weeklyData[0].max < temps[i] ) {
+          weeklyData[0].max = temps[i];
+        }
+        $('#todaysMaxTemp').text(weeklyData[0].max);
+
+      // 翌日の場合
+      } else if ( dataTz.getDate() ==  tomorrowTz.getDate() ) {
+        $('#todaysMaxTemp').parent().parent().parent().find('.h2').text("明日の天気");
+
+        if( weeklyData[1].max == null ) {
+          weeklyData[1].max = temps[i];
+          weeklyData[1].min = temps[i];
+        } else if ( weeklyData[1].max < temps[i] ) {
+          weeklyData[1].max = temps[i];
+        }
+
+        $('#todaysMaxTemp').text(weeklyData[1].max);
+      }
+    });
+
+    console.log(weeklyData)
+
+      //////////////////////////////////////////////
+      /// 週間予報の作成
+      const d1Ts0Area = data[1].timeSeries[0].areas[0];
+      const d1Ts0TimeZone = data[1].timeSeries[0].timeDefines;
+
+      const d1Ts1Area = data[1].timeSeries[1].areas[0];
+      const d1Ts1TimeZone = data[1].timeSeries[1].timeDefines;
+
+      d1Ts0TimeZone.forEach( (timeZone, i) => {
+        const dateTime = new Date(timeZone);
+        if( weeklyData[i+1] == undefined)
+          weeklyData[i+1] = {};
+        weeklyData[i+1].timeZone = dateTime;
+        weeklyData[i+1].weatherCode = d1Ts0Area.weatherCodes[i];
+
+
+        if( d1Ts0Area.pops[i] != '' )
+          weeklyData[i+1].perc = d1Ts0Area.pops[i];
+
+        if( d1Ts1Area.tempsMax[i] != '' )
+          weeklyData[i+1].max = d1Ts1Area.tempsMax[i];
+
+        if( d1Ts1Area.tempsMin[i] != '' )
+          weeklyData[i+1].min = d1Ts1Area.tempsMin[i];
+
+      });
+
+      console.log(weeklyData);
+
+
+      const boxDate = $('#boxDate');
+
+      weeklyData.forEach( (dateData, i) => {
+
+        let boxDateClone = boxDate.clone();
+        boxDateClone.attr('id', `boxDate${i}`);
+        console.log(dateData.weatherCode)
+
+        const WEATHER_SVG = WEATHER_SVG_URL.replace('${weatherCode}', dateData.weatherCode);
+        boxDateClone
+          .find('.date').text(`${dateData.timeZone.getDate()}日(${days[dateData.timeZone.getDay()][0]})`).end()
+          .find('.weather').css('background-image', `url(${WEATHER_SVG})` ).end()
+          .find('.maxTemp').text(dateData.max? dateData.max : "-").end()
+          .find('.lowTemp').text(dateData.min? dateData.min : "-").end()
+          .find('.perc').text(dateData.perc).end()
+
+
+        $('#boxDates').append(boxDateClone);
+      });
+
+
+      setInterval( () => {
+        location.href = "./"
+      }, 60000);
+
+  }).fail( (jqXHR, status, e) => {
+    console.log(e.message)
   });
 
-//  const posts = json.data.children.map((child) => child.data);
-//  return posts.map(post => 
-//    React.createElement('div', {key: post.id}, post.title)
-//  )
+});
 
-  return React.createElement('div', {key: "OK"}, "OK")
-}
-
-//
-const App = props => {
-  return React.createElement(React.Suspense, 
-    {
-      fallback: React.createElement('p', {}, 'Now Loading...')
-    }, 
-    React.createElement(Inner)
-  )
-}
-const rootElement = ReactDOMClient.createRoot(document.getElementById('root'));
-rootElement.render(React.createElement(App))
 
 const createDayText = day => {
  const days = ["Sun", "Mon", "Tue", "Wed", "Thu" , "Fri", "Sat"]
  return days[day]
 }
 
-const DigiClock = () => {
- const dateTime = new Date();
- const year = dateTime.getFullYear();
- const month = dateTime.getMonth() + 1;
- const date  = dateTime.getDate();
- const day = createDayText(dateTime.getDay());
- const hour = dateTime.getHours();
- const min = dateTime.getMinutes();
- const sec = dateTime.getSeconds();
- console.log(`${year}年${month}月${date}日(${day}) ${hour}時${min}分${sec}`);
-
-};
-
-DigiClock();
-////////////////////////////////////////////////////
+///////////////////////////////////////////////////
 </script>
 
 </body>
