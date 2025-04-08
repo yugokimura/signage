@@ -20,39 +20,106 @@
 body {
   background: rgb(0,5,85);
   background: linear-gradient(305deg, rgba(0,5,85,1) 0%, rgba(0,212,255,1) 100%);
+  margin:0;
+  padding:0;
+  font-size:1em;
+  font-family: "Helvetica Neue",
+    Arial,
+    "Hiragino Kaku Gothic ProN",
+    "Hiragino Sans",
+    Meiryo,
+    sans-serif;
+
 }
+p {
+  margin:0; padding:0;
+}
+div { 
+  margin:0; padding:0;
+  box-sizing: border-box;
+}
+
+.widget {
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 5px #000000;
+}
+.boxRow {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+  align-items: center;
+  justify-content: center;
+}
+.boxColumn {
+  display: flex;
+  flex-direction:column;
+  flex-grow: 1;
+  align-items: center;
+  justify-content: center;
+}
+
+.boxInner {
+  background-color: #ffffff11;
+  border-radius: 10px;
+}
+
+.h2 {
+  display: flex;
+  margin:0;
+  padding: 0;
+  font-size:2em;
+  text-align: center;
+  color: #ffffff;
+  align-items: center;
+  justify-content: center;
+}
+
 #main {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
 }
+#head {
+  display: flex;
+  flex-direction: row;
+  height: 60px;
+  overflow:hidden;
+  font-weight: bold;
+  font-size: 2.5em;
+  justify-content: center;
+  align-items: center;
+  color: #ffffff;
+  background: #afa6a60a;
+  /* box-shadow: 0 0 10px #0000006c; */
+}
+
 #top {
   display: flex;
   flex-direction: row;
   flex-grow: 1;
-  flex-grow: 1;
-  height: 100%;
   overflow:hidden;
+  max-height: 300px;
+  padding:10px;
 }
 
 #bottom {
   display: flex;
-  background: #afa6a60a;
-  flex-grow: 1;
-  height: 100%;
+  background-color: #afa6a60a;
+  flex-grow: 10;
   overflow:hidden;
-
+  padding: 10px;
 }
 
-#todaysBoxWeather {
-  display: flex;
-  flex-direction: row;
-  background: #000000a8;
+#widgetWeather {
+  background-color: #153D70ff;
   flex-grow: 1;
-  margin:20px;
   border-radius: 20px;
   max-width:500px;
+  padding: 10px;
+  margin : 0 10px;
+  overflow: hidden;
 }
 
 #todaysWeather {
@@ -70,56 +137,44 @@ body {
   width:100%;
   height:100%;
   align-items: center;
-  overflow: hidden;
-}
-p {
-  margin:0;
-  padding:0;
 }
 #todaysMaxTemp {
   display: flex;
   flex-grow: 1;
   color: #fd4c4c;
-  font-size: 5em;
+  color: #ffffff;
+  font-size: 6em;
   font-weight: bold;
   align-items: center;
+  overflow: hidden;
+}
+#todaysMaxTemp .unit {
+  font-size:0.4em;
 }
 #todaysMinTemp {
   display: flex;
   flex-grow: 1;
   color: #c1adf8;
-  font-size: 5em;
+  font-size: 3em;
   font-weight: bold;
   align-items: center;
+  overflow: hidden;
+  display: none;
 }
 
 
-#todaysBoxRain {
+#widgetRain {
   display: flex;
   flex-direction: column;
-  background: #0000006c;
+  background-color: #153D70ff;
   flex-grow: 3;
-  margin:20px;
+  border-radius: 10px;
   padding: 10px;
-  border-radius: 20px;
+  margin : 0 10px;
+  overflow: hidden;
 }
-h2 {
-  margin:0;
-  padding: 0;
-  text-align: center;
-  color: #ffffff;
-  display: flex;
-  flex-grow: 1;
-  align-items: center;
-  justify-content: center;
-}
-#rainBox {
-  display: flex;
-  flex-direction: row;
-  flex-grow: 18;
-}
-#rainBox .box{
-  display: flex;
+
+.boxRain{
   background-color: #ffffff;
   border-radius: 20px;
   flex-grow: 1;
@@ -127,30 +182,149 @@ h2 {
   width: 100%;
   height: 100%;
 }
+.boxRain .time{
+  display: flex;
+  flex-grow: 1;
+  justify-content: center;
+  align-items: flex-end;
+  font-weight: bold;
+  font-size:2em;
+  color:  #153D70ff;
+}
+.boxRain .perc{
+  display: flex;
+  flex-grow: 1;
+  justify-content: center;
+  align-items: baseline;
+  font-weight: bold;
+  font-weight: bold;
+  font-size:3.5em;
+  color:  #153D70ff;
+}
+
+#widgetWeeklyWeather {
+  display: flex;
+  flex-direction: column;
+  background-color: #153D7055;
+  flex-grow: 3;
+  border-radius: 10px;
+  padding: 10px;
+  margin : 0 10px;
+  overflow: hidden;
+}
 </style>
 </head>
 <body>
 <section>
   <div id="main">
+    <div id="head">2024年2月10日(水曜日)</div>
     <div id="top">
-      <div id="todaysBoxWeather">
-        <i id="todaysWeather"></i>
-        <div id="todaysTemp">
-          <p id="todaysMaxTemp">17</p>
-          <p id="todaysMinTemp">10</p>
+      <div id="widgetWeather" class="widget">
+        <h2 class="h2">本日の気温</h2>
+        <div class="boxRow boxInner">
+          <!-- <i id="todaysWeather"></i> -->
+          <div class="boxColumn">
+            <p id="todaysMaxTemp">17<i class="unit">℃</i></p>
+            <p id="todaysMinTemp">10</p>
+          </div>
         </div>
       </div>
-      <div id="todaysBoxRain">
-        <h2>降水確率</h2>
-        <div id="rainBox">
-          <div class="box">1</div>
-          <div class="box">2</div>
-          <div class="box">3</div>
-          <div class="box">4</div>
+      <div id="widgetWeather" class="widget">
+        <h2 class="h2">本日の天気</h2>
+        <div class="boxRow boxInner">
+          <i id="todaysWeather"></i>
+        </div>
+      </div>
+      <div id="widgetRain" class="widget">
+        <h2 class="h2">降水確率</h2>
+        <div class="boxRow">
+          <div class="boxRain boxColumn">
+            <p class="time">0-6時</p>
+            <p class="perc">10%</p>
+          </div>
+          <div class="boxRain boxColumn">
+            <p class="time">6-12時</p>
+            <p class="perc">10%</p>
+          </div>
+          <div class="boxRain boxColumn">
+            <p class="time">12-18時</p>
+            <p class="perc">10%</p>
+          </div>
+          <div class="boxRain boxColumn">
+            <p class="time">18-0時</p>
+            <p class="perc">10%</p>
+          </div>
         </div>
       </div>
     </div>
-    <div id="bottom"></div>
+    <div id="bottom">
+
+      <div  id="widgetWeeklyWeather" class="widget">
+        <div class="boxRow">
+
+          <div class="boxColumn">
+            <p class="date">8日(火)</p>
+            <i class="weather">10%</i>
+            <div class="boxSmall">
+
+            </div>
+            <p class="perc">10%</p>
+          </div>
+
+          <div class="boxColumn">
+            <p class="date">9日(水)</p>
+            <i class="weather">10%</i>
+            <div class="boxSmall">
+
+            </div>
+            <p class="perc">10%</p>
+          </div>
+          <div class="boxColumn">
+            <p class="date">10日(木)</p>
+            <i class="weather">10%</i>
+            <div class="boxSmall">
+
+            </div>
+            <p class="perc">10%</p>
+          </div>
+          <div class="boxColumn">
+            <p class="date">11日(金)</p>
+            <i class="weather">10%</i>
+            <div class="boxSmall">
+
+            </div>
+            <p class="perc">10%</p>
+          </div>
+
+          <div class="boxColumn">
+            <p class="date">12日(土)</p>
+            <i class="weather">10%</i>
+            <div class="boxSmall">
+
+            </div>
+            <p class="perc">10%</p>
+          </div>
+
+          <div class="boxColumn">
+            <p class="date">13日(日)</p>
+            <i class="weather">10%</i>
+            <div class="boxSmall">
+
+            </div>
+            <p class="perc">10%</p>
+          </div>
+
+          <div class="boxColumn">
+            <p class="date">14日(月)</p>
+            <i class="weather">10%</i>
+            <div class="boxSmall">
+
+            </div>
+            <p class="perc">10%</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 <div id="root"></div>
