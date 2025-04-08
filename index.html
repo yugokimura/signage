@@ -180,7 +180,7 @@ div {
   justify-content: center;
   align-items: flex-end;
   font-weight: bold;
-  font-size:2em;
+  font-size:1.3em;
   color:  #153D70ff;
 }
 .boxRain .time::after {
@@ -509,7 +509,7 @@ $(document).ready( () => {
       } else if ( dataTz.getDate() ==  tomorrowTz.getDate() ) {
 
         boxRainClone
-        .find('.time').text(`翌日${dataTz.getHours()}`).end()
+        .find('.time').text(`翌${dataTz.getHours()}`).end()
         .find('.perc').text(ts1Area.pops[i])
 
         tempTomorrows.push(ts1Area.pops[i]);
