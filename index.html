@@ -462,6 +462,9 @@
   </section>
   <script type="text/javascript">
 
+    const APP_VERSION = '1.0.0';
+    const DATA_VERSION = '200';
+    const DATA_VERSION_HISTORY = [100, 120];
     const WEATHER_API_URL = 'https://www.jma.go.jp/bosai/forecast/data/forecast/130000.json';
     const WEATHER_SVG_URL = 'https://www.jma.go.jp/bosai/forecast/img/%WEATHER_CODE%.svg';
     const DAYS = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"]
@@ -474,7 +477,8 @@
         getDataByTimeZone: function (timeZone) {
           // timZoneのデータを手元のdataオブジェクトのデータと比較
           let index = this.data.findIndex(data => {
-            return this.getYmd(data.timeZone) == this.getYmd(timeZone)
+            // data.timeZoneをjson.stringfyからparseし返還した際にフォーマットが変更されるため、new Dateでサイドフォーマッティング
+            return this.getYmd(new Date(data.timeZone)) == this.getYmd(timeZone)
           });
           return (index != -1) ? this.data[index] : undefined;
         },
@@ -483,18 +487,26 @@
         }
       };
 
+      // 過去データの削除
+      DATA_VERSION_HISTORY.filter( (OLD_DATA_VERSION, i) => {
+        window.localStorage.removeItem('data' + OLD_DATA_VERSION);
+      })
+      // window.localStorage.removeItem('data' + DATA_VERSION);
+
       // ローカルストレージからデータを読み出し
-      // window.localStorage.removeItem('data');
-      weeklyData.data = (window.localStorage.getItem('data'))? JSON.parse(window.localStorage.getItem('data')) : [];
-      
+      weeklyData.data = (window.localStorage.getItem('data' + DATA_VERSION))? JSON.parse(window.localStorage.getItem('data')) : [];
+
       // 1週間分のデータを事前に作成
       for (let i = 0; i < 7; i++) {
         const timeZone = new Date();
         timeZone.setDate(timeZone.getDate() + i);
 
-        weeklyData.data[i] = {}
-        weeklyData.data[i].timeZone = timeZone;
+        const data = weeklyData.getDataByTimeZone(timeZone);
 
+        if(! data ) {
+          weeklyData.data[i] = {}
+          weeklyData.data[i].timeZone = timeZone;
+        }
       }
 
       /**************************************************
@@ -529,43 +541,43 @@
             return;
           }
 
-        // 天気画像
-        const WEATHER_SVG = WEATHER_SVG_URL.replace('%WEATHER_CODE%', data.weatherCode);
-        if (i == ( weeklyData.data.length - 7)) {
-          // 本日の天気
-          if( data.weatherCode)
-            $('#todaysWeather').css('background-image', `url(${WEATHER_SVG})`);
+          // 天気画像
+          const WEATHER_SVG = WEATHER_SVG_URL.replace('%WEATHER_CODE%', data.weatherCode);
+          if (i == ( weeklyData.data.length - 7)) {
+            // 本日の天気
+            if( data.weatherCode)
+              $('#todaysWeather').css('background-image', `url(${WEATHER_SVG})`);
 
-          // 本日の気温
-          if( data.max)
-            $('#todaysMaxTemp').text(data.max);
-        }
+            // 本日の気温
+            if( data.max)
+              $('#todaysMaxTemp').text(data.max);
+          }
         
-        // 降水確率の配列がある場合
-        if( data.pops ) {
-          data.pops.forEach( (data , c) => {
+          // 降水確率の配列がある場合
+          if( data.pops ) {
+            data.pops.forEach( (data2 , c) => {
 
-            // 降水確率の子要素数が4より大きい場合は処理を中止
-            if( $('#boxRains').children().length > 4) return;
+              // 降水確率の子要素数が4より大きい場合は処理を中止
+              if( $('#boxRains').children().length > 4) return;
 
-            let boxRainClone = $('#boxRain').clone();
-            boxRainClone
-              .attr('id', `boxRain${i}-${c}`)
-              .find('.time').text(`${new Date(data.timeZone).getDate()}日${new Date(data.timeZone).getHours()}`).end()
-              .find('.pop').text(data.pop).end()
-              .appendTo('#boxRains');
-            
-          });
-        }
-        // 週間天気予報
-        let boxDateClone =  $('#boxDate').clone();
-        boxDateClone
-          .attr('id', `boxDate${i}`)
-          .find('.date').text(`${data.timeZone.getDate()}日(${DAYS[data.timeZone.getDay()][0]})`).end()
-          .find('.weather').css('background-image', `url(${WEATHER_SVG})`).end()
-          .find('.maxTemp').text(data.max ? data.max : "-").end()
-          .find('.lowTemp').text(data.min ? data.min : "-").end()
-          .find('.pop').text(data.pop).end().appendTo('#boxDates');
+              let boxRainClone = $('#boxRain').clone();
+              boxRainClone
+                .attr('id', `boxRain${i}-${c}`)
+                .find('.time').text(`${new Date(data2.timeZone).getDate()}日${new Date(data2.timeZone).getHours()}`).end()
+                .find('.pop').text(data2.pop).end()
+                .appendTo('#boxRains');
+              
+            });
+          }
+          // 週間天気予報
+          let boxDateClone =  $('#boxDate').clone();
+          boxDateClone
+            .attr('id', `boxDate${i}`)
+            .find('.date').text(`${new Date(data.timeZone).getDate()}日(${DAYS[new Date(data.timeZone).getDay()][0]})`).end()
+            .find('.weather').css('background-image', `url(${WEATHER_SVG})`).end()
+            .find('.maxTemp').text(data.max ? data.max : "-").end()
+            .find('.lowTemp').text(data.min ? data.min : "-").end()
+            .find('.pop').text(data.pop).end().appendTo('#boxDates');
         });
       };
 
@@ -575,15 +587,16 @@
       ***************************************************/
       const updateData = () => {
         $.ajax({
-        url: WEATHER_API_URL,
-        type: 'GET',
-        data: null,
+          url: WEATHER_API_URL,
+          type: 'GET',
+          data: null,
         }).done(data => {
           console.log("-------------------");
           console.log(data);
           console.log(weeklyData);
-          console.log("-------------------");
+          console.log("===================");
 
+          
           // 東京の天気関連情報の取得
           const d0Ts0Area = data[0].timeSeries[0].areas[0];
           const d0Ts0TimeZone = data[0].timeSeries[0].timeDefines;
@@ -635,7 +648,7 @@
             // 既存データを確認し既に同じ時刻帯のデータがあれば更新する
             let updateFlag = false;
             data.pops.forEach( (popData, c) => {
-              if( Number(popData.timeZone) == Number(new Date(timeZone)) ) {
+              if( Number(　new Date(popData.timeZone) ) == Number(new Date(timeZone)) ) {
                 popData.pop = Number(d0Ts1Area.pops[i]);
                 updateFlag = true;
                 return;
@@ -671,7 +684,7 @@
             // 既存データを確認し既に同じ時刻帯のデータがあれば更新する
             let updateFlag = false;
             data.temps.forEach( (tempData, c) => {
-              if( Number(tempData.timeZone) == Number(new Date(timeZone)) ) {
+              if( Number( new Date(tempData.timeZone) ) == Number(new Date(timeZone)) ) {
                 tempData.temp = Number(d0Ts2Area.temps[i]);
                 updateFlag = true;
                 return;
@@ -713,7 +726,7 @@
           });
 
           console.log(weeklyData)
-          window.localStorage.setItem('data', JSON.stringify(weeklyData.data));
+          window.localStorage.setItem('data' + DATA_VERSION, JSON.stringify(weeklyData.data));
           renderData();
 
         }).fail((jqXHR, status, e) => {
@@ -728,8 +741,8 @@
 
       // データを更新
       updateData();
-      setInterval(updateData, 360000)
-      // setTimeout(updateData, 5000)
+      //setInterval(updateData, 360000)
+      setTimeout(updateData, 5000)
 
     });
 
