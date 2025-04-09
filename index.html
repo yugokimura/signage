@@ -1,354 +1,387 @@
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="manifest" href="./manifest.json" />
-    <title>TEST</title>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <script>
-      window.addEventListener("load", () => {
-        //service workerの登録
-        if ("serviceWorker" in navigator) {
-          navigator.serviceWorker.register("./sw.js");
-        }
-      });
-    </script>
-<style type="text/css">
-body {
-  background: rgb(0,5,85);
-  background: linear-gradient(305deg, rgba(0,5,85,1) 0%, rgba(0,212,255,1) 100%);
-  margin:0;
-  padding:0;
-  font-size:1em;
-  font-family: "Helvetica Neue",
-    Arial,
-    "Hiragino Kaku Gothic ProN",
-    "Hiragino Sans",
-    Meiryo,
-    sans-serif;
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="./manifest.json" />
+  <title>TEST</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+  <script>
+    window.addEventListener("load", () => {
+      //service workerの登録
+      if ("serviceWorker" in navigator) {
+        //navigator.serviceWorker.register("./sw.js");
+      }
+    });
+  </script>
+  <style type="text/css">
+    body {
+      background: rgb(0, 5, 85);
+      background: linear-gradient(305deg, rgba(0, 5, 85, 1) 0%, rgba(0, 212, 255, 1) 100%);
+      margin: 0;
+      padding: 0;
+      font-size: 1em;
+      font-family: "Helvetica Neue",
+        Arial,
+        "Hiragino Kaku Gothic ProN",
+        "Hiragino Sans",
+        Meiryo,
+        sans-serif;
 
-}
-p {
-  margin:0; padding:0;
-}
-div { 
-  margin:0; padding:0;
-  box-sizing: border-box;
-}
+    }
 
-.widget {
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 0 5px #000000;
-}
-.boxRow {
-  display: flex;
-  flex-direction: row;
-  flex-grow: 1;
-  align-items: center;
-  justify-content: center;
-}
-.boxColumn {
-  display: flex;
-  flex-direction:column;
-  flex-grow: 1;
-  align-items: center;
-  justify-content: center;
-}
+    p {
+      margin: 0;
+      padding: 0;
+    }
 
-.boxInner {
-  background-color: #ffffff11;
-  border-radius: 10px;
-}
+    div {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-.h2 {
-  display: flex;
-  margin:0;
-  padding: 0;
-  font-size:2em;
-  text-align: center;
-  color: #ffffff;
-  align-items: center;
-  justify-content: center;
-}
+    .widget {
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 5px #000000;
+    }
 
-#main {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-}
-#head {
-  display: flex;
-  flex-direction: row;
-  height: 60px;
-  overflow:hidden;
-  font-weight: bold;
-  font-size: 2.5em;
-  justify-content: center;
-  align-items: center;
-  color: #ffffff;
-  background: #afa6a60a;
-  /* box-shadow: 0 0 10px #0000006c; */
-}
+    .boxRow {
+      display: flex;
+      flex-direction: row;
+      flex-grow: 1;
+      align-items: center;
+      justify-content: center;
+    }
 
-#top {
-  display: flex;
-  flex-direction: row;
-  flex-grow: 1;
-  overflow:hidden;
-  max-height: 300px;
-  padding:10px;
-}
+    .boxColumn {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      align-items: center;
+      justify-content: center;
+    }
 
-#bottom {
-  display: flex;
-  background-color: #afa6a60a;
-  flex-grow:unset;
-  overflow:hidden;
-  padding: 10px;
-}
+    .boxInner {
+      background-color: #ffffff11;
+      border-radius: 10px;
+    }
 
-#widgetWeather {
-  background-color: #153D70ff;
-  flex-grow: 1;
-  border-radius: 20px;
-  max-width:500px;
-  padding: 10px;
-  margin : 0 10px;
-  overflow: hidden;
-}
+    .h2 {
+      display: flex;
+      margin: 0;
+      padding: 0;
+      font-size: 2em;
+      text-align: center;
+      color: #ffffff;
+      align-items: center;
+      justify-content: center;
+    }
 
-#todaysWeather {
-  display: flex;
-  /* background-image: url(https://www.jma.go.jp/bosai/forecast/img/101.svg); */
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: center;
-  width:100%;
-  height:100%;
-}
-#todaysTemp {
-  display: flex;
-  flex-direction: column;
-  width:100%;
-  height:100%;
-  align-items: center;
-}
-#todaysMaxTemp {
-  display: flex;
-  flex-grow: 1;
-  color: #fd4c4c;
-  color: #ffffff;
-  font-size: 6em;
-  font-weight: bold;
-  align-items: center;
-  overflow: hidden;
-  width: 100%;
-  justify-content: center;
-}
-#todaysMaxTemp::after {
-  content: '℃';
-  font-size:0.5em;
-}
+    #main {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
 
+    #head {
+      display: flex;
+      flex-direction: row;
+      height: 60px;
+      overflow: hidden;
+      font-weight: bold;
+      font-size: 2.5em;
+      justify-content: center;
+      align-items: center;
+      color: #ffffff;
+      background: #afa6a60a;
+      /* box-shadow: 0 0 10px #0000006c; */
+    }
 
-#widgetRain {
-  display: flex;
-  flex-direction: column;
-  background-color: #153D70ff;
-  flex-grow: 3;
-  border-radius: 10px;
-  padding: 10px;
-  margin : 0 10px;
-  overflow: hidden;
-}
+    #top {
+      display: flex;
+      flex-direction: row;
+      flex-grow: 1;
+      overflow: hidden;
+      max-height: 300px;
+      padding: 10px;
+    }
 
-.boxRain{
-  background-color: #ffffff;
-  border-radius: 20px;
-  flex-grow: 1;
-  margin: 0 10px;
-  width: 100%;
-  height: 100%;
-  display: flex;
-}
-.boxRain .time{
-  display: flex;
-  flex-grow: 1;
-  justify-content: center;
-  align-items: flex-end;
-  font-weight: bold;
-  font-size:1.3em;
-  color:  #153D70ff;
-}
-.boxRain .time::after {
-  content: '時';
-}
-.boxRain .perc{
-  display: flex;
-  flex-grow: 1;
-  justify-content: center;
-  align-items: baseline;
-  font-weight: bold;
-  font-weight: bold;
-  font-size:3.5em;
-  color:  #153D70ff;
-}
-.boxRain .perc::after {
-  content: '%';
-}
+    #bottom {
+      display: flex;
+      background-color: #afa6a60a;
+      flex-grow: unset;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    #widgetWeather {
+      background-color: #153D70ff;
+      flex-grow: 1;
+      border-radius: 20px;
+      max-width: 500px;
+      padding: 10px;
+      margin: 0 10px;
+      overflow: hidden;
+    }
+
+    #todaysWeather {
+      display: flex;
+      /* background-image: url(https://www.jma.go.jp/bosai/forecast/img/101.svg); */
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    #todaysTemp {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+    }
+
+    #todaysMaxTemp {
+      display: flex;
+      flex-grow: 1;
+      color: #fd4c4c;
+      color: #ffffff;
+      font-size: 6em;
+      font-weight: bold;
+      align-items: center;
+      overflow: hidden;
+      width: 100%;
+      justify-content: center;
+    }
+
+    #todaysMaxTemp::after {
+      content: '℃';
+      font-size: 0.5em;
+    }
 
 
-/* BOTTOM BOX */
-#widgetWeeklyWeather {
-  display: flex;
-  flex-direction: column;
-  background-color: #153D7055;
-  flex-grow: 3;
-  border-radius: 10px;
-  padding: 10px;
-  margin : 0 10px;
-  overflow: hidden;
-}
-.boxDates {
-  align-items: flex-start;
-}
-.boxDate {
-  border-right: 1px solid #ffffff33;
-}
-.boxDate:last-child {  border:none; 
-}
-.boxDate p.date {
-  display: flex;
-  flex-grow: 1;
-  font-size:2em;
-  font-weight: bold;
-  color:#ffffff;
-}
-.boxDate i.weather {
-  display: flex;
-  flex-grow: 2;
-  /* background-image: url(https://www.jma.go.jp/bosai/forecast/img/115.svg); */
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: center;
-  width:100%;
-  height: 200px;
+    #widgetRain {
+      display: flex;
+      flex-direction: column;
+      background-color: #153D70ff;
+      flex-grow: 3;
+      border-radius: 10px;
+      padding: 10px;
+      margin: 0 10px;
+      overflow: hidden;
+    }
 
-}
-.boxDate .boxSmall {
-  display: flex;
-  flex-grow: 1;
-  width: 100%;
-  font-size:2em;
-} 
+    .boxRain {
+      background-color: #ffffff;
+      border-radius: 20px;
+      flex-grow: 1;
+      margin: 0 10px;
+      width: 100%;
+      height: 100%;
+      display: flex;
+    }
 
-.boxDate .boxSmall .maxTemp {
-  display: flex;
-  flex-grow: 1;
-  justify-content: right;
-  font-weight: bold;
-  color: #FF5050;
-  padding: 0 5px 0 0;
-}
-.boxDate .boxSmall .maxTemp::after {
-  content: '℃';
-  font-size:.5em;
-}
+    .boxRain .time {
+      display: flex;
+      flex-grow: 1;
+      justify-content: center;
+      align-items: flex-end;
+      font-weight: bold;
+      font-size: 1.3em;
+      color: #153D70ff;
+    }
+
+    .boxRain .time::after {
+      content: '時';
+    }
+
+    .boxRain .pop {
+      display: flex;
+      flex-grow: 1;
+      justify-content: center;
+      align-items: baseline;
+      font-weight: bold;
+      font-weight: bold;
+      font-size: 3.5em;
+      color: #153D70ff;
+    }
+
+    .boxRain .pop::after {
+      content: '%';
+    }
 
 
-.boxDate .boxSmall .lowTemp {
-  display: flex;
-  flex-grow: 1;
-  justify-content: left;
-  color: #51A0FF;
-  padding: 0 0 0 5px;
-}
-.boxDate .boxSmall .lowTemp::after {
-  content: '℃';
-  font-size:.5em;
-}
+    /* BOTTOM BOX */
+    #widgetWeeklyWeather {
+      display: flex;
+      flex-direction: column;
+      background-color: #153D7055;
+      flex-grow: 3;
+      border-radius: 10px;
+      padding: 10px;
+      margin: 0 10px;
+      overflow: hidden;
+    }
+
+    .boxDates {
+      align-items: flex-start;
+    }
+
+    .boxDate {
+      border-right: 1px solid #ffffff33;
+    }
+
+    .boxDate:last-child {
+      border: none;
+    }
+
+    .boxDate p.date {
+      display: flex;
+      flex-grow: 1;
+      font-size: 2em;
+      font-weight: bold;
+      color: #ffffff;
+    }
+
+    .boxDate i.weather {
+      display: flex;
+      flex-grow: 2;
+      /* background-image: url(https://www.jma.go.jp/bosai/forecast/img/115.svg); */
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: center;
+      width: 100%;
+      height: 200px;
+
+    }
+
+    .boxDate .boxSmall {
+      display: flex;
+      flex-grow: 1;
+      width: 100%;
+      font-size: 2em;
+    }
+
+    .boxDate .boxSmall .maxTemp {
+      display: flex;
+      flex-grow: 1;
+      justify-content: right;
+      font-weight: bold;
+      color: #FF5050;
+      padding: 0 5px 0 0;
+    }
+
+    .boxDate .boxSmall .maxTemp::after {
+      content: '℃';
+      font-size: .5em;
+    }
 
 
-.boxDate p.perc {
-  display: flex;
-  flex-grow: 2;
-  font-size:2em;
-  font-weight: bold;
-  color:#ffffff;
-}
-.boxDate p.perc::after {
-  content: '%';
-  font-size:1em;
-}
-#boxRain { display: none;}
-#boxDate { display: none;}
-</style>
+    .boxDate .boxSmall .lowTemp {
+      display: flex;
+      flex-grow: 1;
+      justify-content: left;
+      color: #51A0FF;
+      padding: 0 0 0 5px;
+    }
+
+    .boxDate .boxSmall .lowTemp::after {
+      content: '℃';
+      font-size: .5em;
+    }
+
+
+    .boxDate p.pop {
+      display: flex;
+      flex-grow: 2;
+      font-size: 2em;
+      font-weight: bold;
+      color: #ffffff;
+    }
+
+    .boxDate p.pop::after {
+      content: '%';
+      font-size: 1em;
+    }
+
+    #boxRain {
+      display: none;
+    }
+
+    #boxDate {
+      display: none;
+    }
+  </style>
 </head>
+
 <body>
-<section>
-  <div id="main">
-    <div id="head">2024年2月10日(水曜日)</div>
-    <div id="top">
-      <div id="widgetWeather" class="widget">
-        <h2 class="h2">本日の気温</h2>
-        <div class="boxRow boxInner">
-          <div class="boxColumn">
-            <p id="todaysMaxTemp">-</p>
+  <section>
+    <div id="main">
+      <div id="head">2024年2月10日(水曜日)</div>
+      <div id="top">
+        <div id="widgetWeather" class="widget">
+          <h2 class="h2">本日の気温</h2>
+          <div class="boxRow boxInner">
+            <div class="boxColumn">
+              <p id="todaysMaxTemp">-</p>
+            </div>
           </div>
         </div>
-      </div>
-      <div id="widgetWeather" class="widget">
-        <h2 class="h2">本日の天気</h2>
-        <div class="boxRow boxInner">
-          <i id="todaysWeather"></i>
-        </div>
-      </div>
-      <div id="widgetRain" class="widget">
-        <h2 class="h2">降水確率</h2>
-        <div id="boxRains" class="boxRow">
-          <div id="boxRain" class="boxRain boxColumn">
-            <p class="time">-</p>
-            <p class="perc">-</p>
+        <div id="widgetWeather" class="widget">
+          <h2 class="h2">本日の天気</h2>
+          <div class="boxRow boxInner">
+            <i id="todaysWeather"></i>
           </div>
-<!--
+        </div>
+        <div id="widgetRain" class="widget">
+          <h2 class="h2">降水確率</h2>
+          <div id="boxRains" class="boxRow">
+            <div id="boxRain" class="boxRain boxColumn">
+              <p class="time">-</p>
+              <p class="pop">-</p>
+            </div>
+            <!--
           <div class="boxRain boxColumn">
             <p class="time">0-6時</p>
-            <p class="perc">-</p>
+            <p class="pop">-</p>
           </div>
           <div class="boxRain boxColumn">
             <p class="time">6-12時</p>
-            <p class="perc">-</p>
+            <p class="pop">-</p>
           </div>
           <div class="boxRain boxColumn">
             <p class="time">12-18時</p>
-            <p class="perc">-</p>
+            <p class="pop">-</p>
           </div>
           <div class="boxRain boxColumn">
             <p class="time">18-0時</p>
-            <p class="perc">-</p>
+            <p class="pop">-</p>
           </div>
 -->
+          </div>
         </div>
       </div>
-    </div>
-    <div id="bottom">
+      <div id="bottom">
 
-      <div  id="widgetWeeklyWeather" class="widget">
-        <div id="boxDates" class="boxDates boxRow">
+        <div id="widgetWeeklyWeather" class="widget">
+          <div id="boxDates" class="boxDates boxRow">
 
-          <div id="boxDate" class="boxDate boxColumn">
-            <p class="date">-</p>
-            <i class="weather"></i>
-            <div class="boxSmall">
-              <p class="maxTemp"></p>
-              <p class="lowTemp"></p>
+            <div id="boxDate" class="boxDate boxColumn">
+              <p class="date">-</p>
+              <i class="weather"></i>
+              <div class="boxSmall">
+                <p class="maxTemp"></p>
+                <p class="lowTemp"></p>
+              </div>
+              <p class="pop"></p>
             </div>
-            <p class="perc"></p>
-          </div>
-<!-- 
+            <!-- 
           <div class="boxDate boxColumn">
             <p class="date">8日(火)</p>
             <i class="weather"></i>
@@ -356,7 +389,7 @@ div {
               <p class="maxTemp">20</p>
               <p class="lowTemp">10</p>
             </div>
-            <p class="perc">10%</p>
+            <p class="pop">10%</p>
           </div>
 
           <div class="boxDate boxColumn">
@@ -366,7 +399,7 @@ div {
               <p class="maxTemp">20</p>
               <p class="lowTemp">10</p>
             </div>
-            <p class="perc">10%</p>
+            <p class="pop">10%</p>
           </div>
 
           <div class="boxDate boxColumn">
@@ -376,7 +409,7 @@ div {
               <p class="maxTemp">20</p>
               <p class="lowTemp">10</p>
             </div>
-            <p class="perc">10%</p>
+            <p class="pop">10%</p>
           </div>
 
           <div class="boxDate boxColumn">
@@ -386,7 +419,7 @@ div {
               <p class="maxTemp">20</p>
               <p class="lowTemp">10</p>
             </div>
-            <p class="perc">10%</p>
+            <p class="pop">10%</p>
           </div>
 
           <div class="boxDate boxColumn">
@@ -396,7 +429,7 @@ div {
               <p class="maxTemp">20</p>
               <p class="lowTemp">10</p>
             </div>
-            <p class="perc">10%</p>
+            <p class="pop">10%</p>
           </div>
 
           <div class="boxDate boxColumn">
@@ -406,7 +439,7 @@ div {
               <p class="maxTemp">20</p>
               <p class="lowTemp">10</p>
             </div>
-            <p class="perc">10%</p>
+            <p class="pop">10%</p>
           </div>
 
           <div class="boxDate boxColumn">
@@ -416,251 +449,255 @@ div {
               <p class="maxTemp">20</p>
               <p class="lowTemp">10</p>
             </div>
-            <p class="perc">10%</p>
+            <p class="pop">10%</p>
           </div> -->
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
-<script type="text/javascript">
+  </section>
+  <script type="text/javascript">
 
-  const WEATHER_API_URL = 'https://www.jma.go.jp/bosai/forecast/data/forecast/130000.json';
-  const WEATHER_SVG_URL = 'https://www.jma.go.jp/bosai/forecast/img/${weatherCode}.svg';
+    const WEATHER_API_URL = 'https://www.jma.go.jp/bosai/forecast/data/forecast/130000.json';
+    const WEATHER_SVG_URL = 'https://www.jma.go.jp/bosai/forecast/img/%WEATHER_CODE%.svg';
+    const DAYS = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"]
+    
+    $(document).ready(() => {
 
-$(document).ready( () => {
+      // 1週間のデータを格納するオブジェクト
+      let weeklyData = {
+        data: [],
+        timeZoneIndex: [],
+        getDataByTimeZone: function (timeZone) {
+          // timZoneのデータを手元のdataオブジェクトのデータと比較
+          let index = this.data.findIndex(data => {
+            return this.getYmd(data.timeZone) == this.getYmd(timeZone)
+          });
+          return (index != -1) ? this.data[index] : undefined;
+        },
+        getYmd: (date) => {
+          return `${date.getFullYear()}${date.getMonth() + 1}${date.getDate()}`;
+        }
+      };
 
-  let weeklyData = [];
+      // 1週間分のデータを事前に作成
+      for (let i = 0; i < 7; i++) {
+        const timeZone = new Date();
+        timeZone.setDate(timeZone.getDate() + i);
 
-  $.ajax({
-    url  : WEATHER_API_URL,
-    type : 'GET',
-    data : null,
-  }).done( data => {
-    console.log(data);
-    console.log('-----------------')
+        weeklyData.data[i] = {}
+        weeklyData.data[i].timeZone = timeZone;
 
-
-    weeklyData[0] = {};
-    weeklyData[1] = {};
-
-    // timeSeries[0]
-    const ts0Area = data[0].timeSeries[0].areas[0];
-    const ts0TimeZone = data[0].timeSeries[0].timeDefines;
-
-    // 今日の日付
-    const today = new Date();　// 今日の日付取得
-    const dateTime = new Date(ts0TimeZone[0]);
-    const year = today.getFullYear();
-    const month = today.getMonth() + 1;
-    const date  = today.getDate();
-    const days = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日" , "金曜日", "土曜日"]
-    const day = days[today.getDay()];
-    const hour = today.getHours();
-    const min = today.getMinutes();
-    const sec = today.getSeconds();
-    $('#head').text(`${year}年${month}月${date}日(${day}) ${hour}時${min}分`);
-
-
-    const dateTimeTomorrow = new Date(ts0TimeZone[0]);
-    dateTimeTomorrow.setDate(dateTimeTomorrow.getDate() + 1);
-
-      // 今日・明日のtimZoneを格納
-    weeklyData[0].timeZone = dateTime;
-    weeklyData[1].timeZone = dateTimeTomorrow;
-
-    // 本日の天気
-    const weatherSVG = WEATHER_SVG_URL.replace('${weatherCode}', ts0Area.weatherCodes[0]);
-    $('#todaysWeather').css('background-image', `url(${weatherSVG})` );
-    console.log(weatherSVG);
-
-    // 今日・明日の天気を格納
-    weeklyData[0].weatherCode = ts0Area.weatherCodes[0];
-    weeklyData[1].weatherCode = ts0Area.weatherCodes[1];
-
-    // timeSeries[1]
-    const ts1Area = data[0].timeSeries[1].areas[0];
-    const ts1TimeZone = data[0].timeSeries[1].timeDefines;
-
-    // 降水確率
-    const boxRain = $('#boxRain');
-    let tempTodays = [];
-    let tempTomorrows = [];
-
-    ts1TimeZone.forEach( (timeZone, i) => {
-      const dataTz = new Date(timeZone);
-
-      let tomorrowTz =  new Date();
-      tomorrowTz.setDate(tomorrowTz.getDate() + 1); 
-  
-      let boxRainClone = boxRain.clone();
-      boxRainClone.attr('id', `boxRain${i}`)
-
-      // 今日の場合
-      if ( dataTz.getDate() == today.getDate() ) {
-        boxRainClone
-        .find('.time').text(`今日${dataTz.getHours()}`).end()
-        .find('.perc').text(ts1Area.pops[i])
-        
-        tempTodays.push(ts1Area.pops[i]);
-
-
-      // 翌日の場合
-      } else if ( dataTz.getDate() ==  tomorrowTz.getDate() ) {
-
-        boxRainClone
-        .find('.time').text(`翌${dataTz.getHours()}`).end()
-        .find('.perc').text(ts1Area.pops[i])
-
-        tempTomorrows.push(ts1Area.pops[i]);
-
-      // 翌々日移行の場合
-      } else {
-        boxRainClone
-        .find('.time').text(`翌々日${dataTz.getHours()}`).end()
-        .find('.perc').text(ts1Area.pops[i])
       }
 
-      $('#boxRains').append(boxRainClone);
+      /**************************************************
+      * 日付更新関数
+      ***************************************************/
+      const updateTime = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        const date = today.getDate();
+        const day = DAYS[today.getDay()];
+        const hour = today.getHours();
+        const min = today.getMinutes();
+        const sec = today.getSeconds();
+        $('#head').text(`${year}年${month}月${date}日(${day}) ${hour}時${min}分`);
+      };
 
+      /**************************************************
+      * レンダリング関数
+      ***************************************************/
+      const renderData = () => {
+
+        $('#todaysWeather').css('background-image', '');
+        $('#todaysMaxTemp').text('-');
+        $('#boxRains').children().not('#boxRain').remove();
+        $('#boxDates').children().not('#boxDate').remove();
+
+        weeklyData.data.forEach((data, i) => {
+        // 天気画像
+        const WEATHER_SVG = WEATHER_SVG_URL.replace('%WEATHER_CODE%', data.weatherCode);
+        if (i == 0) {
+          // 本日の天気
+          if( data.weatherCode)
+            $('#todaysWeather').css('background-image', `url(${WEATHER_SVG})`);
+
+          // 本日の気温
+          if( data.max)
+            $('#todaysMaxTemp').text(data.max);
+        }
+        
+        // 降水確率の配列がある場合
+        if( data.pops ) {
+          data.pops.forEach( (data , c) => {
+
+            // 降水確率の子要素数が4より大きい場合は処理を中止
+            if( $('#boxRains').children().length > 4) return;
+
+            let boxRainClone = $('#boxRain').clone();
+            boxRainClone
+              .attr('id', `boxRain${i}-${c}`)
+              .find('.time').text(`${new Date(data.timeZone).getDate()}日${new Date(data.timeZone).getHours()}`).end()
+              .find('.pop').text(data.pop).end()
+              .appendTo('#boxRains');
+            
+          });
+        }
+        // 週間天気予報
+        let boxDateClone =  $('#boxDate').clone();
+        boxDateClone
+          .attr('id', `boxDate${i}`)
+          .find('.date').text(`${data.timeZone.getDate()}日(${DAYS[data.timeZone.getDay()][0]})`).end()
+          .find('.weather').css('background-image', `url(${WEATHER_SVG})`).end()
+          .find('.maxTemp').text(data.max ? data.max : "-").end()
+          .find('.lowTemp').text(data.min ? data.min : "-").end()
+          .find('.pop').text(data.pop).end().appendTo('#boxDates');
+        });
+      };
+
+
+      /**************************************************
+      * データ更新関数
+      ***************************************************/
+      const updateData = () => {
+        $.ajax({
+        url: WEATHER_API_URL,
+        type: 'GET',
+        data: null,
+        }).done(data => {
+
+          // 配列データの初期化処理
+          weeklyData.data.forEach((data, i) => {
+            data.pops = [];
+            data.pop = 0;
+            data.temps = [];
+          });
+
+          // console.log(data);
+          // console.log('-----------------')
+
+          // 東京の天気関連情報の取得
+          const d0Ts0Area = data[0].timeSeries[0].areas[0];
+          const d0Ts0TimeZone = data[0].timeSeries[0].timeDefines;
+
+          // 東京の降水確率の取得
+          const d0Ts1Area = data[0].timeSeries[1].areas[0];
+          const d0Ts1TimeZone = data[0].timeSeries[1].timeDefines;
+
+          // 東京の直近の気温の取得
+          const d0Ts2Area = data[0].timeSeries[2].areas[0];
+          const d0Ts2TimeZone = data[0].timeSeries[2].timeDefines;
+
+          // 週間の天気・降水確率
+          const d1d0Ts0Area = data[1].timeSeries[0].areas[0];
+          const d1d0Ts0TimeZone = data[1].timeSeries[0].timeDefines;
+
+          // 週間の最高・最低気温
+          const d1d0Ts1Area = data[1].timeSeries[1].areas[0];
+          const d1d0Ts1TimeZone = data[1].timeSeries[1].timeDefines;
+
+
+          //////////////////////////////////////////
+          // 本日・明日の天気データの作成
+          //////////////////////////////////////////
+
+          d0Ts0TimeZone.forEach((timeZone, i) => {
+
+            // 対象日のデータを取得
+            const data = weeklyData.getDataByTimeZone(new Date(timeZone));
+            data.wave         = d0Ts0Area.waves[i];                 // 波の高さ説明
+            data.weatherCode  = Number(d0Ts0Area.weatherCodes[i]);  // 天気コード
+            data.weather      = d0Ts0Area.weathers[i];              // 天気の説明
+            data.window       = d0Ts0Area.winds[i];                 // 風の説明
+
+          });
+
+
+          //////////////////////////////////////////
+          // 降水確率データの作成
+          //////////////////////////////////////////
+          d0Ts1TimeZone.forEach((timeZone, i) => {
+
+            // 対象日のデータを取得
+            const data = weeklyData.getDataByTimeZone(new Date(timeZone));
+
+            // 初期化しデータを収納
+            data.pops = (data.pops)? data.pops : [];            
+            data.pops.push({
+              timeZone : new Date(timeZone),
+              pop : Number(d0Ts1Area.pops[i])
+            });
+
+            // 平均温度を算出し格納
+            data.pop = (data.pop)? (data.pop + Number(d0Ts1Area.pops[i]))/2  : Number(d0Ts1Area.pops[i]);
+          });
+
+
+          //////////////////////////////////////////
+          // 最高・最低天気データの作成
+          //////////////////////////////////////////
+
+          d0Ts2TimeZone.forEach((timeZone, i) => {
+
+            // 対象日のデータを取得
+            const data = weeklyData.getDataByTimeZone(new Date(timeZone));
+
+            // 初期化しデータを収納
+            data.temps = (data.temps)? data.temps : [];            
+            data.temps.push({
+              timeZone : new Date(timeZone),
+              temp : Number(d0Ts2Area.temps[i])
+            });
+
+            data.max = (data.max)? data.max : Number(d0Ts2Area.temps[i]);
+            data.min = (data.min)? data.min : Number(d0Ts2Area.temps[i]);
+
+            data.max = (d0Ts2Area.temps[i] > data.max)? Number(d0Ts2Area.temps[i]) : data.max;
+            data.min = (d0Ts2Area.temps[i] < data.min)? Number(d0Ts2Area.temps[i]) : data.min;
+          });
+
+          //////////////////////////////////////////
+          /// 週間予報データの作成
+          //////////////////////////////////////////
+
+          d1d0Ts0TimeZone.forEach((timeZone, i) => {
+
+            // 対象日のデータを取得
+            const data = weeklyData.getDataByTimeZone(new Date(timeZone));
+
+            // データが空の場合処理を注視
+            if( !data ) return;
+
+            data.weatherCode = (data.weatherCode)? data.weatherCode : Number(d1d0Ts0Area.weatherCodes[i]);
+            data.pop = (data.pop)? data.pop : Number(d1d0Ts0Area.pops[i]);
+
+            data.max = (data.max)? data.max : Number(d1d0Ts1Area.tempsMax[i]);
+            data.min = (data.min)? data.min : Number(d1d0Ts1Area.tempsMin[i]);
+
+          });
+
+          console.log(weeklyData)
+          renderData();
+
+        }).fail((jqXHR, status, e) => {
+          console.log(e.message)
+        });
+      };
+
+
+      // 日付を更新
+      updateTime();
+      setInterval(updateTime, 60000)
+
+      // データを更新
+      updateData();
+      setInterval(updateData, 360000)
     });
-
-    // 本日と翌日の降水確率の挿入
-    weeklyData[0].perc = '-';
-    weeklyData[1].perc = '-';
-    if(tempTodays.length > 0) {
-      const tempTodaysSum = tempTodays.reduce(function (acc, cur) {
-        return acc + cur;
-      });
-      weeklyData[0].perc = tempTodaysSum / tempTodays.length;
-    }
-
-    if(tempTomorrows.length > 0) {
-      const tempTomorrowsSum = tempTomorrows.reduce(function (acc, cur) {
-        return acc + cur;
-      });
-      weeklyData[1].perc = tempTomorrowsSum / tempTomorrows.length;
-    }
 
     
-    // timeSeries[2]
-    const ts2Area = data[0].timeSeries[2].areas[0];
-    const ts2TimeZone = data[0].timeSeries[2].timeDefines;
-
-    // 本日の気温
-    const temps = ts2Area.temps;
-    const s2TimeZone = ts2TimeZone;
-    $('#todaysMaxTemp').text(temps[1]);
-
-
-    weeklyData[0].max = null;
-    weeklyData[0].min = null;
-    weeklyData[1].max = null;
-    weeklyData[1].min = null;
-
-    ts2TimeZone.forEach( (timeZone, i) => {
-      const dataTz = new Date(timeZone);
-      let tomorrowTz =  new Date();
-      tomorrowTz.setDate(tomorrowTz.getDate() + 1);
-
-      // 今日の場合
-      if ( dataTz.getDate() == today.getDate() ) {
-        $('#todaysMaxTemp').parent().parent().parent().find('.h2').text("今日の天気");
-
-        if( weeklyData[0].max == null ) {
-          weeklyData[0].max = temps[i];
-          weeklyData[0].min = temps[i];
-        } else if ( weeklyData[0].max < temps[i] ) {
-          weeklyData[0].max = temps[i];
-        }
-        $('#todaysMaxTemp').text(weeklyData[0].max);
-
-      // 翌日の場合
-      } else if ( dataTz.getDate() ==  tomorrowTz.getDate() ) {
-        $('#todaysMaxTemp').parent().parent().parent().find('.h2').text("明日の天気");
-
-        if( weeklyData[1].max == null ) {
-          weeklyData[1].max = temps[i];
-          weeklyData[1].min = temps[i];
-        } else if ( weeklyData[1].max < temps[i] ) {
-          weeklyData[1].max = temps[i];
-        }
-
-        $('#todaysMaxTemp').text(weeklyData[1].max);
-      }
-    });
-
-    console.log(weeklyData)
-
-      //////////////////////////////////////////////
-      /// 週間予報の作成
-      const d1Ts0Area = data[1].timeSeries[0].areas[0];
-      const d1Ts0TimeZone = data[1].timeSeries[0].timeDefines;
-
-      const d1Ts1Area = data[1].timeSeries[1].areas[0];
-      const d1Ts1TimeZone = data[1].timeSeries[1].timeDefines;
-
-      d1Ts0TimeZone.forEach( (timeZone, i) => {
-        const dateTime = new Date(timeZone);
-        if( weeklyData[i+1] == undefined)
-          weeklyData[i+1] = {};
-        weeklyData[i+1].timeZone = dateTime;
-        weeklyData[i+1].weatherCode = d1Ts0Area.weatherCodes[i];
-
-
-        if( d1Ts0Area.pops[i] != '' )
-          weeklyData[i+1].perc = d1Ts0Area.pops[i];
-
-        if( d1Ts1Area.tempsMax[i] != '' )
-          weeklyData[i+1].max = d1Ts1Area.tempsMax[i];
-
-        if( d1Ts1Area.tempsMin[i] != '' )
-          weeklyData[i+1].min = d1Ts1Area.tempsMin[i];
-
-      });
-
-      console.log(weeklyData);
-
-
-      const boxDate = $('#boxDate');
-
-      weeklyData.forEach( (dateData, i) => {
-
-        let boxDateClone = boxDate.clone();
-        boxDateClone.attr('id', `boxDate${i}`);
-        console.log(dateData.weatherCode)
-
-        const WEATHER_SVG = WEATHER_SVG_URL.replace('${weatherCode}', dateData.weatherCode);
-        boxDateClone
-          .find('.date').text(`${dateData.timeZone.getDate()}日(${days[dateData.timeZone.getDay()][0]})`).end()
-          .find('.weather').css('background-image', `url(${WEATHER_SVG})` ).end()
-          .find('.maxTemp').text(dateData.max? dateData.max : "-").end()
-          .find('.lowTemp').text(dateData.min? dateData.min : "-").end()
-          .find('.perc').text(dateData.perc).end()
-
-
-        $('#boxDates').append(boxDateClone);
-      });
-
-
-      setInterval( () => {
-        location.href = "./"
-      }, 60000);
-
-  }).fail( (jqXHR, status, e) => {
-    console.log(e.message)
-  });
-
-});
-
-
-const createDayText = day => {
- const days = ["Sun", "Mon", "Tue", "Wed", "Thu" , "Fri", "Sat"]
- return days[day]
-}
-
-///////////////////////////////////////////////////
-</script>
+  </script>
 
 </body>
+
 </html>
