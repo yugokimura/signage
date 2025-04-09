@@ -481,7 +481,7 @@
       };
 
       // ローカルストレージからデータを読み出し
-      window.localStorage.removeItem('data');
+      //window.localStorage.removeItem('data');
       weeklyData.data = (window.localStorage.getItem('data'))? JSON.parse(window.localStorage.getItem('data')) : [];
       
       // 1週間分のデータを事前に作成
