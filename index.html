@@ -89,6 +89,7 @@
     }
 
     #head {
+      position: relative;
       display: flex;
       flex-direction: row;
       height: 60px;
@@ -321,13 +322,22 @@
     #boxDate {
       display: none;
     }
+    #appVersion {
+      position:absolute;
+      right:10px;
+      font-size:.3em;
+      font-weight: 300;
+    }
+    #appVersion::before {
+      content: 'version ';
+    }
   </style>
 </head>
 
 <body>
   <section>
     <div id="main">
-      <div id="head">2024年2月10日(水曜日)</div>
+      <div id="head"><p id="h1" ></p><i id="appVersion"></i></div>
       <div id="top">
         <div id="widgetWeather" class="widget">
           <h2 class="h2">本日の気温</h2>
@@ -469,6 +479,8 @@
     const WEATHER_SVG_URL = 'https://www.jma.go.jp/bosai/forecast/img/%WEATHER_CODE%.svg';
     const DAYS = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"]
     
+    $('#appVersion').text(APP_VERSION);
+
     $(document).ready(() => {
 
       // 1週間のデータを格納するオブジェクト
@@ -521,7 +533,7 @@
         const hour = today.getHours();
         const min = today.getMinutes();
         const sec = today.getSeconds();
-        $('#head').text(`${year}年${month}月${date}日(${day}) ${hour}時${min}分`);
+        $('#h1').text(`${year}年${month}月${date}日(${day}) ${hour}時${min}分`);
       };
 
       /**************************************************
@@ -596,7 +608,7 @@
           console.log(weeklyData);
           console.log("===================");
 
-          
+
           // 東京の天気関連情報の取得
           const d0Ts0Area = data[0].timeSeries[0].areas[0];
           const d0Ts0TimeZone = data[0].timeSeries[0].timeDefines;
@@ -741,8 +753,8 @@
 
       // データを更新
       updateData();
-      //setInterval(updateData, 360000)
-      setTimeout(updateData, 5000)
+      setInterval(updateData, 360000)
+      //setTimeout(updateData, 5000)
 
     });
 
