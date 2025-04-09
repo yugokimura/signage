@@ -5,14 +5,14 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="manifest" href="./manifest.json" />
-  <title>TEST</title>
+  <title>Weather Signage</title>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"
     integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
   <script>
     window.addEventListener("load", () => {
       //service workerの登録
       if ("serviceWorker" in navigator) {
-        //navigator.serviceWorker.register("./sw.js");
+        navigator.serviceWorker.register("./sw.js");
       }
     });
   </script>
@@ -480,6 +480,10 @@
         }
       };
 
+      // ローカルストレージからデータを読み出し
+      window.localStorage.removeItem('data');
+      weeklyData.data = (window.localStorage.getItem('data'))? JSON.parse(window.localStorage.getItem('data')) : [];
+      
       // 1週間分のデータを事前に作成
       for (let i = 0; i < 7; i++) {
         const timeZone = new Date();
@@ -516,9 +520,15 @@
         $('#boxDates').children().not('#boxDate').remove();
 
         weeklyData.data.forEach((data, i) => {
+
+          // データが何件あっても配列最後の7件のみを処理に利用する
+          if( i < ( weeklyData.data.length - 7) ) {
+            return;
+          }
+
         // 天気画像
         const WEATHER_SVG = WEATHER_SVG_URL.replace('%WEATHER_CODE%', data.weatherCode);
-        if (i == 0) {
+        if (i == ( weeklyData.data.length - 7)) {
           // 本日の天気
           if( data.weatherCode)
             $('#todaysWeather').css('background-image', `url(${WEATHER_SVG})`);
@@ -566,12 +576,15 @@
         type: 'GET',
         data: null,
         }).done(data => {
-
+          console.log("-------------------");
+          console.log(data);
+          console.log(weeklyData);
+          console.log("-------------------");
           // 配列データの初期化処理
           weeklyData.data.forEach((data, i) => {
-            data.pops = [];
-            data.pop = 0;
-            data.temps = [];
+            // data.pops = [];
+            // data.temps = [];
+            // data.pop = 0;
           });
 
           // console.log(data);
@@ -623,14 +636,28 @@
             const data = weeklyData.getDataByTimeZone(new Date(timeZone));
 
             // 初期化しデータを収納
-            data.pops = (data.pops)? data.pops : [];            
-            data.pops.push({
-              timeZone : new Date(timeZone),
-              pop : Number(d0Ts1Area.pops[i])
+            data.pops = (data.pops)? data.pops : [];
+
+            // 既存データを確認し既に同じ時刻帯のデータがあれば更新する
+            let updateFlag = false;
+            data.pops.forEach( (popData, c) => {
+              if( Number(popData.timeZone) == Number(new Date(timeZone)) ) {
+                popData.pop = Number(d0Ts1Area.pops[i]);
+                updateFlag = true;
+                return;
+              }
             });
 
-            // 平均温度を算出し格納
-            data.pop = (data.pop)? (data.pop + Number(d0Ts1Area.pops[i]))/2  : Number(d0Ts1Area.pops[i]);
+            if(!updateFlag) {
+              data.pops.push({
+                timeZone : new Date(timeZone),
+                pop : Number(d0Ts1Area.pops[i])
+              });
+
+              // データの追加があれば平均温度を再計算し格納
+              data.pop = (data.pop)? (data.pop + Number(d0Ts1Area.pops[i]))/2  : Number(d0Ts1Area.pops[i]);
+            }
+
           });
 
 
@@ -640,21 +667,35 @@
 
           d0Ts2TimeZone.forEach((timeZone, i) => {
 
+
             // 対象日のデータを取得
             const data = weeklyData.getDataByTimeZone(new Date(timeZone));
 
             // 初期化しデータを収納
-            data.temps = (data.temps)? data.temps : [];            
-            data.temps.push({
-              timeZone : new Date(timeZone),
-              temp : Number(d0Ts2Area.temps[i])
+            data.temps = (data.temps)? data.temps : [];
+            
+            // 既存データを確認し既に同じ時刻帯のデータがあれば更新する
+            let updateFlag = false;
+            data.temps.forEach( (tempData, c) => {
+              if( Number(tempData.timeZone) == Number(new Date(timeZone)) ) {
+                tempData.temp = Number(d0Ts2Area.temps[i]);
+                updateFlag = true;
+                return;
+              }
             });
 
-            data.max = (data.max)? data.max : Number(d0Ts2Area.temps[i]);
-            data.min = (data.min)? data.min : Number(d0Ts2Area.temps[i]);
+            if(!updateFlag) {
+              data.temps.push({
+                timeZone : new Date(timeZone),
+                temp : Number(d0Ts2Area.temps[i])
+              });
 
-            data.max = (d0Ts2Area.temps[i] > data.max)? Number(d0Ts2Area.temps[i]) : data.max;
-            data.min = (d0Ts2Area.temps[i] < data.min)? Number(d0Ts2Area.temps[i]) : data.min;
+              // データの追加があれば最高・最低温度情報を更新
+              data.max = (data.max)? data.max : Number(d0Ts2Area.temps[i]);
+              data.min = (data.min)? data.min : Number(d0Ts2Area.temps[i]);
+              data.max = (d0Ts2Area.temps[i] > data.max)? Number(d0Ts2Area.temps[i]) : data.max;
+              data.min = (d0Ts2Area.temps[i] < data.min)? Number(d0Ts2Area.temps[i]) : data.min;
+            }
           });
 
           //////////////////////////////////////////
@@ -678,6 +719,7 @@
           });
 
           console.log(weeklyData)
+          window.localStorage.setItem('data', JSON.stringify(weeklyData.data));
           renderData();
 
         }).fail((jqXHR, status, e) => {
@@ -693,6 +735,8 @@
       // データを更新
       updateData();
       setInterval(updateData, 360000)
+      // setTimeout(updateData, 5000)
+
     });
 
     
