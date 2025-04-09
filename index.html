@@ -489,9 +489,10 @@
         getDataByTimeZone: function (timeZone) {
           // timZoneのデータを手元のdataオブジェクトのデータと比較
           let index = this.data.findIndex(data => {
-            // data.timeZoneをjson.stringfyからparseし返還した際にフォーマットが変更されるため、new Dateでサイドフォーマッティング
+            // data.timeZoneをjson.stringfyからparseし返還した際にフォーマットが変更されるため、new Dateで再度フォーマッティング
             return this.getYmd(new Date(data.timeZone)) == this.getYmd(timeZone)
           });
+          // 指定のtimeZoneのデータが配列に含まれていなければundefinedを返却
           return (index != -1) ? this.data[index] : undefined;
         },
         getYmd: (date) => {
@@ -513,8 +514,8 @@
         const timeZone = new Date();
         timeZone.setDate(timeZone.getDate() + i);
 
+        // localStorageから取り出したデータに指定日付のデータが無ければ新規追加
         const data = weeklyData.getDataByTimeZone(timeZone);
-
         if(! data ) {
           weeklyData.data[i] = {}
           weeklyData.data[i].timeZone = timeZone;
@@ -541,21 +542,26 @@
       ***************************************************/
       const renderData = () => {
 
+        // 要素を初期化
         $('#todaysWeather').css('background-image', '');
         $('#todaysMaxTemp').text('-');
         $('#boxRains').children().not('#boxRain').remove();
         $('#boxDates').children().not('#boxDate').remove();
 
+        // weeklyData.dataの配列に格納されたデータをループ処理
         weeklyData.data.forEach((data, i) => {
 
-          // データが何件あっても配列最後の7件のみを処理に利用する
+          // データが何件あっても配列最後の7件のみを処理に利用
           if( i < ( weeklyData.data.length - 7) ) {
             return;
           }
 
-          // 天気画像
+          // 天気画像を生成
           const WEATHER_SVG = WEATHER_SVG_URL.replace('%WEATHER_CODE%', data.weatherCode);
+
+          // 1番目に表示する本日のデータに対する処理
           if (i == ( weeklyData.data.length - 7)) {
+
             // 本日の天気
             if( data.weatherCode)
               $('#todaysWeather').css('background-image', `url(${WEATHER_SVG})`);
@@ -565,13 +571,16 @@
               $('#todaysMaxTemp').text(data.max);
           }
         
-          // 降水確率の配列がある場合
+          // 降水確率の配列が存在する場合の処理
           if( data.pops ) {
+
+            // この日の降水確率の配列をループ
             data.pops.forEach( (data2 , c) => {
 
               // 降水確率の子要素数が4より大きい場合は処理を中止
               if( $('#boxRains').children().length > 4) return;
 
+              // 降水確率の要素を生成しappend
               let boxRainClone = $('#boxRain').clone();
               boxRainClone
                 .attr('id', `boxRain${i}-${c}`)
@@ -581,7 +590,7 @@
               
             });
           }
-          // 週間天気予報
+          // 週間天気予報の要素を生成しappend
           let boxDateClone =  $('#boxDate').clone();
           boxDateClone
             .attr('id', `boxDate${i}`)
@@ -654,7 +663,7 @@
             // 対象日のデータを取得
             const data = weeklyData.getDataByTimeZone(new Date(timeZone));
 
-            // 初期化しデータを収納
+            // 降水確率を格納する配列、popsが存在しない場合は初期化
             data.pops = (data.pops)? data.pops : [];
 
             // 既存データを確認し既に同じ時刻帯のデータがあれば更新する
@@ -673,7 +682,7 @@
                 pop : Number(d0Ts1Area.pops[i])
               });
 
-              // データの追加があれば平均温度を再計算し格納
+              // 平均温度を再計算
               data.pop = (data.pop)? (data.pop + Number(d0Ts1Area.pops[i]))/2  : Number(d0Ts1Area.pops[i]);
             }
 
@@ -686,11 +695,10 @@
 
           d0Ts2TimeZone.forEach((timeZone, i) => {
 
-
             // 対象日のデータを取得
             const data = weeklyData.getDataByTimeZone(new Date(timeZone));
 
-            // 初期化しデータを収納
+            // 温度を格納する配列、tempsが存在しない場合は初期化
             data.temps = (data.temps)? data.temps : [];
             
             // 既存データを確認し既に同じ時刻帯のデータがあれば更新する
@@ -726,9 +734,10 @@
             // 対象日のデータを取得
             const data = weeklyData.getDataByTimeZone(new Date(timeZone));
 
-            // データが空の場合処理を注視
+            // データが空の場合処理を中止
             if( !data ) return;
 
+            // 天気コード、降水確率、最高気温、最低気温のデータを更新
             data.weatherCode = (data.weatherCode)? data.weatherCode : Number(d1d0Ts0Area.weatherCodes[i]);
             data.pop = (data.pop)? data.pop : Number(d1d0Ts0Area.pops[i]);
 
@@ -737,7 +746,10 @@
 
           });
 
-          console.log(weeklyData)
+          console.log(weeklyData);
+          console.log("@@@@@@@@@@@@@@@@@@@");
+          
+          // ローカルストレージにデータを保存
           window.localStorage.setItem('data' + DATA_VERSION, JSON.stringify(weeklyData.data));
           renderData();
 
