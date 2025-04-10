@@ -46,6 +46,12 @@
       display: flex;
       flex-direction: column;
       box-shadow: 0 0 5px #000000;
+      background-color: #153D70ff;
+      flex-grow: 3;
+      border-radius: 10px;
+      padding: 10px;
+      margin: 0 10px;
+      overflow: hidden;
     }
 
     .boxRow {
@@ -119,14 +125,10 @@
       padding: 10px;
     }
 
+    #widgetTemp,
     #widgetWeather {
-      background-color: #153D70ff;
       flex-grow: 1;
-      border-radius: 20px;
       max-width: 500px;
-      padding: 10px;
-      margin: 0 10px;
-      overflow: hidden;
     }
 
     #todaysWeather {
@@ -285,7 +287,7 @@
     }
 
 
-    .boxDate .boxSmall .lowTemp {
+    .boxDate .boxSmall .minTemp {
       display: flex;
       flex-grow: 1;
       justify-content: left;
@@ -294,7 +296,7 @@
       text-shadow: 0 0 5px #000000;
     }
 
-    .boxDate .boxSmall .lowTemp::after {
+    .boxDate .boxSmall .minTemp::after {
       content: '℃';
       font-size: .5em;
     }
@@ -338,12 +340,10 @@
     <div id="main">
       <div id="head"><p id="h1" ></p><i id="appVersion"></i></div>
       <div id="top">
-        <div id="widgetWeather" class="widget">
+        <div id="widgetTemp" class="widget">
           <h2 class="h2">本日の気温</h2>
           <div class="boxRow boxInner">
-            <div class="boxColumn">
-              <p id="todaysMaxTemp">-</p>
-            </div>
+            <p id="todaysMaxTemp">-</p>
           </div>
         </div>
         <div id="widgetWeather" class="widget">
@@ -373,7 +373,7 @@
               <i class="weather"></i>
               <div class="boxSmall">
                 <p class="maxTemp"></p>
-                <p class="lowTemp"></p>
+                <p class="minTemp"></p>
               </div>
               <p class="pop"></p>
             </div>
@@ -524,7 +524,7 @@
             .find('.date').text(`${new Date(data.timeZone).getDate()}日(${DAYS[new Date(data.timeZone).getDay()][0]})`).end()
             .find('.weather').css('background-image', `url(${WEATHER_SVG})`).end()
             .find('.maxTemp').text(data.max ? data.max : "-").end()
-            .find('.lowTemp').text(data.min ? data.min : "-").end()
+            .find('.minTemp').text(data.min ? data.min : "-").end()
             .find('.pop').text(data.pop).end().appendTo('#boxDates');
         });
       };
