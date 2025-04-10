@@ -1,5 +1,4 @@
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -356,28 +355,12 @@
         <div id="widgetRain" class="widget">
           <h2 class="h2">降水確率</h2>
           <div id="boxRains" class="boxRow">
+            
             <div id="boxRain" class="boxRain boxColumn">
               <p class="time">-</p>
               <p class="pop">-</p>
             </div>
-            <!--
-          <div class="boxRain boxColumn">
-            <p class="time">0-6時</p>
-            <p class="pop">-</p>
-          </div>
-          <div class="boxRain boxColumn">
-            <p class="time">6-12時</p>
-            <p class="pop">-</p>
-          </div>
-          <div class="boxRain boxColumn">
-            <p class="time">12-18時</p>
-            <p class="pop">-</p>
-          </div>
-          <div class="boxRain boxColumn">
-            <p class="time">18-0時</p>
-            <p class="pop">-</p>
-          </div>
--->
+            
           </div>
         </div>
       </div>
@@ -395,76 +378,7 @@
               </div>
               <p class="pop"></p>
             </div>
-            <!-- 
-          <div class="boxDate boxColumn">
-            <p class="date">8日(火)</p>
-            <i class="weather"></i>
-            <div class="boxSmall">
-              <p class="maxTemp">20</p>
-              <p class="lowTemp">10</p>
-            </div>
-            <p class="pop">10%</p>
-          </div>
 
-          <div class="boxDate boxColumn">
-            <p class="date">9日(水)</p>
-            <i class="weather"></i>
-            <div class="boxSmall">
-              <p class="maxTemp">20</p>
-              <p class="lowTemp">10</p>
-            </div>
-            <p class="pop">10%</p>
-          </div>
-
-          <div class="boxDate boxColumn">
-            <p class="date">10日(木)</p>
-            <i class="weather"></i>
-            <div class="boxSmall">
-              <p class="maxTemp">20</p>
-              <p class="lowTemp">10</p>
-            </div>
-            <p class="pop">10%</p>
-          </div>
-
-          <div class="boxDate boxColumn">
-            <p class="date">11日(金)</p>
-            <i class="weather"></i>
-            <div class="boxSmall">
-              <p class="maxTemp">20</p>
-              <p class="lowTemp">10</p>
-            </div>
-            <p class="pop">10%</p>
-          </div>
-
-          <div class="boxDate boxColumn">
-            <p class="date">12日(土)</p>
-            <i class="weather"></i>
-            <div class="boxSmall">
-              <p class="maxTemp">20</p>
-              <p class="lowTemp">10</p>
-            </div>
-            <p class="pop">10%</p>
-          </div>
-
-          <div class="boxDate boxColumn">
-            <p class="date">13日(日)</p>
-            <i class="weather"></i>
-            <div class="boxSmall">
-              <p class="maxTemp">20</p>
-              <p class="lowTemp">10</p>
-            </div>
-            <p class="pop">10%</p>
-          </div>
-
-          <div class="boxDate boxColumn">
-            <p class="date">14日(月)</p>
-            <i class="weather"></i>
-            <div class="boxSmall">
-              <p class="maxTemp">20</p>
-              <p class="lowTemp">10</p>
-            </div>
-            <p class="pop">10%</p>
-          </div> -->
           </div>
         </div>
       </div>
@@ -474,6 +388,10 @@
 
     const APP_VERSION = '1.0.0';
     const DATA_VERSION = '200';
+
+    const NUMB_POPS_DATA    = 4; // 描画する降水確率の数
+    const NUMB_WEEKLY_DATA  = 7; // 描画する週間天気の数
+
     const DATA_VERSION_HISTORY = [100, 120];
     const WEATHER_API_URL = 'https://www.jma.go.jp/bosai/forecast/data/forecast/130000.json';
     const WEATHER_SVG_URL = 'https://www.jma.go.jp/bosai/forecast/img/%WEATHER_CODE%.svg';
@@ -507,18 +425,23 @@
       // window.localStorage.removeItem('data' + DATA_VERSION);
 
       // ローカルストレージからデータを読み出し
-      weeklyData.data = (window.localStorage.getItem('data' + DATA_VERSION))? JSON.parse(window.localStorage.getItem('data')) : [];
+      weeklyData.data = (window.localStorage.getItem('data' + DATA_VERSION))? JSON.parse(window.localStorage.getItem('data' + DATA_VERSION)) : [];
 
       // 1週間分のデータを事前に作成
       for (let i = 0; i < 7; i++) {
+
+        // 今日を含む7日間のデータを生成
         const timeZone = new Date();
         timeZone.setDate(timeZone.getDate() + i);
 
-        // localStorageから取り出したデータに指定日付のデータが無ければ新規追加
+        // 対象日のデータを取得
         const data = weeklyData.getDataByTimeZone(timeZone);
-        if(! data ) {
-          weeklyData.data[i] = {}
-          weeklyData.data[i].timeZone = timeZone;
+
+        // dataが無ければデータを追加
+        if( !data ) {
+          weeklyData.data.push({
+              timeZone : timeZone
+          });
         }
       }
 
@@ -534,8 +457,12 @@
         const hour = today.getHours();
         const min = today.getMinutes();
         const sec = today.getSeconds();
-        $('#h1').text(`${year}年${month}月${date}日(${day}) ${hour}時${min}分`);
+       return `${year}年${month}月${date}日(${day}) ${hour}時${min}分`;
       };
+
+      const renderTime = () => {
+        $('#h1').text(updateTime());
+      }
 
       /**************************************************
       * レンダリング関数
@@ -548,25 +475,23 @@
         $('#boxRains').children().not('#boxRain').remove();
         $('#boxDates').children().not('#boxDate').remove();
 
-        // weeklyData.dataの配列に格納されたデータをループ処理
-        weeklyData.data.forEach((data, i) => {
+        // weeklyData.data配列の後ろ、NUMB_WEEKLY_DATA件のデータを取得 (concatは配列の完全な複製をする処理)
+        const renderingData = weeklyData.data.concat().splice(-NUMB_WEEKLY_DATA);
 
-          // データが何件あっても配列最後の7件のみを処理に利用
-          if( i < ( weeklyData.data.length - 7) ) {
-            return;
-          }
+        // weeklyData.dataの配列に格納されたデータをループ処理
+        renderingData.forEach((data, i) => {
 
           // 天気画像を生成
           const WEATHER_SVG = WEATHER_SVG_URL.replace('%WEATHER_CODE%', data.weatherCode);
 
-          // 1番目に表示する本日のデータに対する処理
-          if (i == ( weeklyData.data.length - 7)) {
+          // 本日のデータの場合
+          if ( weeklyData.getYmd(new Date()) == weeklyData.getYmd( new Date(data.timeZone) )) {
 
-            // 本日の天気
+            // 本日の天気を描画
             if( data.weatherCode)
               $('#todaysWeather').css('background-image', `url(${WEATHER_SVG})`);
 
-            // 本日の気温
+            // 本日の気温を描画
             if( data.max)
               $('#todaysMaxTemp').text(data.max);
           }
@@ -577,8 +502,8 @@
             // この日の降水確率の配列をループ
             data.pops.forEach( (data2 , c) => {
 
-              // 降水確率の子要素数が4より大きい場合は処理を中止
-              if( $('#boxRains').children().length > 4) return;
+              // 降水確率の子要素数がNUMB_POPS_DATAより大きい場合は処理を中止
+              if( $('#boxRains').children().length > NUMB_POPS_DATA) return;
 
               // 降水確率の要素を生成しappend
               let boxRainClone = $('#boxRain').clone();
@@ -612,11 +537,6 @@
           type: 'GET',
           data: null,
         }).done(data => {
-          console.log("-------------------");
-          console.log(data);
-          console.log(weeklyData);
-          console.log("===================");
-
 
           // 東京の天気関連情報の取得
           const d0Ts0Area = data[0].timeSeries[0].areas[0];
@@ -688,7 +608,6 @@
 
           });
 
-
           //////////////////////////////////////////
           // 最高・最低天気データの作成
           //////////////////////////////////////////
@@ -746,12 +665,8 @@
 
           });
 
-          console.log(weeklyData);
-          console.log("@@@@@@@@@@@@@@@@@@@");
-          
           // ローカルストレージにデータを保存
           window.localStorage.setItem('data' + DATA_VERSION, JSON.stringify(weeklyData.data));
-          renderData();
 
         }).fail((jqXHR, status, e) => {
           console.log(e.message)
@@ -759,14 +674,19 @@
       };
 
 
-      // 日付を更新
-      updateTime();
-      setInterval(updateTime, 60000)
+      // 日付を描画
+      renderTime();
+      setInterval(renderTime, 60000);
 
-      // データを更新
+      // データを1時間に1回更新
       updateData();
-      setInterval(updateData, 360000)
-      //setTimeout(updateData, 5000)
+      setInterval(updateData, 360000);
+
+      // データを1分毎に描画
+      renderData();
+      setInterval(renderData, 60000);
+
+
 
     });
 
