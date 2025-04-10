@@ -394,7 +394,10 @@
     const DATA_VERSION_HISTORY = ['', 100, 200];
     const WEATHER_API_URL = 'https://www.jma.go.jp/bosai/forecast/data/forecast/130000.json';
     const WEATHER_SVG_URL = 'https://www.jma.go.jp/bosai/forecast/img/%WEATHER_CODE%.svg';
-    const DAYS = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"]
+    const DAYS = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"];
+
+    // グローバルフラグ
+    const INIT_GET_DATA = false;
     
     $('#appVersion').text(APP_VERSION);
 
@@ -667,6 +670,12 @@
           // ローカルストレージにデータを保存
           window.localStorage.setItem('data' + DATA_VERSION, JSON.stringify(weeklyData.data));
 
+          // 初回データ取得時はレンダリング処理を実行
+          if( !INIT_GET_DATA ) {
+            renderData();
+            INIT_GET_DATA = true;
+          }
+
         }).fail((jqXHR, status, e) => {
           console.log(e.message)
         });
@@ -682,7 +691,6 @@
       setInterval(updateData, 360000);
 
       // データを1分毎に描画
-      renderData();
       setInterval(renderData, 60000);
 
 
