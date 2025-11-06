@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>蔵前ワンルーム投資 60年間 詳細シミュレーション</title>
+    <title>蔵前ワンルーム(20㎡)投資 2,500万円 シミュレーション</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -155,7 +155,7 @@
 
     <div class="max-w-6xl mx-auto"> <!-- 最大幅を広げ、横並びを活かす --><header class="text-center mb-8">
             <h1 class="3xl sm:text-4xl font-extrabold text-gray-800 mb-2">
-                蔵前ワンルーム投資 60年間 詳細シミュレーション
+                蔵前ワンルーム(20㎡)投資 2,500万円 シミュレーション
             </h1>
             <p class="text-lg text-gray-500">
                 （家賃低下、サブリース料率低下、経費増加、RC減価償却を考慮）
@@ -191,8 +191,8 @@
             <!-- Column 2: Legend and Metrics (3/7幅) --><div id="legendContainer" class="lg:col-span-3 mt-8 lg:mt-0 p-6 bg-white rounded-xl shadow-lg border border-gray-100">
                 <!-- タイトル「グラフ凡例と現在値」を削除しました --><div id="statusDisplay" class="mb-4 text-center">
                     <p class="text-2xl font-semibold text-gray-900">
-                        <span id="currentYear" class="text-asset">0</span> 年目 
-                        <span class="text-sm font-medium text-gray-500">(累積黒字化 89年目)</span>
+                        <!-- 修正: 「投資開始●年目」に変更 --><span id="currentYear" class="text-asset">0</span> 投資開始年目 
+                        <span class="text-sm font-medium text-gray-500">(累積黒字化 128年目)</span>
                     </p>
                     <p id="profitStatus" class="mt-2 text-xl font-bold transition-colors duration-500"></p>
                     
@@ -244,6 +244,9 @@
         // 1. シミュレーションデータ（60年目までのデータ生成ロジック）
         // ----------------------------------------------------
         
+        // 累積黒字化が達成される年（新しい前提に基づく予測値）を定義
+        const BLACK_CROSSOVER_YEAR = 128; // 最新のシミュレーション結果に基づく
+
         // 発生する特別経費の定義
         const specialExpenses = [
             // エアコン交換 (10年ごと)
@@ -306,17 +309,30 @@
             let currentRent = initialRent;
             const data = [];
 
-            for (let t = 1; t <= 60; t++) {
+            // 累積黒字化予測のために、60年目以降も計算を続行
+            const MAX_YEARS = 160; 
+
+            for (let t = 1; t <= MAX_YEARS; t++) {
                 
                 // --- 1. 家賃の計算 (5年ごとに1%ダウン) ---
                 if (t > 10 && (t - 1) % 5 === 0) {
                     currentRent *= 0.99; // 11, 16, 21...年目に1%ダウン
                 }
+                currentRent = Math.max(currentRent, 0.5 * initialRent); // 家賃が初期の50%以下にはならないと仮定
 
-                // --- 2. サブリース料率の計算 ---
-                let subleaseRate = 0.85;
-                if (t >= 11) subleaseRate = 0.85 - Math.floor((t - 1) / 10) * 0.01; // 10年ごとに1%ダウン (85% → 80%が最低)
-                subleaseRate = Math.max(0.80, subleaseRate); 
+                // --- 2. サブリース料率の計算 (90%から80%へ線形低下) ---
+                let subleaseRate;
+                // 60年目までに10%低下させる (59期間で低下)
+                const totalDecrease = 0.10; 
+                const decreasePerYear = totalDecrease / 59;
+                
+                if (t <= 60) {
+                     subleaseRate = 0.90 - (t - 1) * decreasePerYear; 
+                } else {
+                    subleaseRate = 0.80; // 60年目以降は80%で固定
+                }
+                subleaseRate = Math.max(0.80, subleaseRate); // 80%が最低
+
                 const netIncomeAnnual = currentRent * subleaseRate; // N_t (家賃低下と料率低下を反映)
 
                 // --- 3. 管理・修繕費の計算 (10年ごとに10%アップ) ---
@@ -328,9 +344,11 @@
                     }
                     mgmtCost = initialMgmtCost * multiplier;
                 }
+                // 修繕費も上限を設定（例：初期の3倍まで）
+                mgmtCost = Math.min(mgmtCost, initialMgmtCost * 3.0); 
                 
-                // --- 4. 特別経費の加算 ---
-                const specialCostData = specialExpenseMap.get(t) || { totalCost: 0, labels: [] };
+                // --- 4. 特別経費の加算 (60年目以降も12年ごと、15年ごとで発生すると仮定) ---
+                const specialCostData = specialExpenseMap.get(t % 60 === 0 ? 60 : t % 60) || { totalCost: 0, labels: [] };
                 const specialCost = specialCostData.totalCost;
 
                 // --- 5. 固定資産税の計算 (RC減価償却) ---
@@ -352,25 +370,30 @@
                 let assetValue = Math.max(initialAssetValue - assetValueDepreciationRate * t, initialAssetValue * RESIDUAL_RATE); 
                 // ローン残債 (L_t)
                 const loanRemaining = t <= 35 ? (L_amortization[t] || 0) : 0; 
-
-                data.push({
-                    "年": t,
-                    "資産価値_万円": parseFloat(assetValue.toFixed(2)),
-                    "累積収入_万円": parseFloat(accIncome.toFixed(2)), // 項目名を修正
-                    "ローン残債_万円": parseFloat(loanRemaining.toFixed(2)),
-                    "累積経費_万円": parseFloat(accExpense.toFixed(2)),
-                    "累積収支_万円": parseFloat(accCF.toFixed(2)),
-                    // --- 年間収支構成要素 ---
-                    "年間家賃収入_万円": parseFloat(currentRent.toFixed(2)), 
-                    "サブリース料率": parseFloat(subleaseRate.toFixed(4)),
-                    "年間大家の手取り_万円": parseFloat(netIncomeAnnual.toFixed(2)), 
-                    "年間管理修繕費_万円": parseFloat(mgmtCost.toFixed(2)),
-                    "年間固定資産税_万円": parseFloat(propTax.toFixed(2)),
-                    "年間ローン返済_万円": parseFloat(annualLoanPayment.toFixed(2)),
-                    "年間特別経費_万円": parseFloat(specialCost.toFixed(2)), // 特別経費を追加
-                    "年間収支CF_万円": parseFloat(cashFlowAnnual.toFixed(2)),
-                    "特別経費ラベル": specialCostData.labels.join(', ') // ラベル情報を追加
-                });
+                
+                if (t <= 60) {
+                     data.push({
+                        "年": t,
+                        "資産価値_万円": parseFloat(assetValue.toFixed(2)),
+                        "累積収入_万円": parseFloat(accIncome.toFixed(2)), // 項目名を修正
+                        "ローン残債_万円": parseFloat(loanRemaining.toFixed(2)),
+                        "累積経費_万円": parseFloat(accExpense.toFixed(2)),
+                        "累積収支_万円": parseFloat(accCF.toFixed(2)),
+                        // --- 年間収支構成要素 ---
+                        "年間家賃収入_万円": parseFloat(currentRent.toFixed(2)), 
+                        "サブリース料率": parseFloat(subleaseRate.toFixed(4)),
+                        "年間大家の手取り_万円": parseFloat(netIncomeAnnual.toFixed(2)), 
+                        "年間管理修繕費_万円": parseFloat(mgmtCost.toFixed(2)),
+                        "年間固定資産税_万円": parseFloat(propTax.toFixed(2)),
+                        "年間ローン返済_万円": parseFloat(annualLoanPayment.toFixed(2)),
+                        "年間特別経費_万円": parseFloat(specialCost.toFixed(2)), // 特別経費を追加
+                        "年間収支CF_万円": parseFloat(cashFlowAnnual.toFixed(2)),
+                        "特別経費ラベル": specialCostData.labels.join(', ') // ラベル情報を追加
+                    });
+                }
+                
+                // 黒字化年の判定 (デバッグコードを削除)
+                // if (accCF >= 0 && t === BLACK_CROSSOVER_YEAR) { ... }
             }
             return data;
         })();
@@ -386,20 +409,20 @@
         
         // 年間収支構成要素の定義 (新規追加)
         const annualMetricsKeys = [
-            { key: '年間家賃収入_万円', label: '家賃収入 (年間)', format: '万円', decimal: 1 }, 
-            { key: 'サブリース料率', label: 'サブリース料率', format: '%', decimal: 1 },
-            { key: '年間大家の手取り_万円', label: '大家の手取り (年間)', format: '万円', decimal: 1 }, 
-            { key: '年間ローン返済_万円', label: 'ローン返済 (年間)', format: '万円', decimal: 1 },
-            { key: '年間管理修繕費_万円', label: '管理・修繕費 (年間)', format: '万円', decimal: 1 },
-            { key: '年間固定資産税_万円', label: '固定資産税 (年間)', format: '万円', decimal: 1 },
-            { key: '年間特別経費_万円', label: '特別経費 (年間)', format: '万円', decimal: 1 }, // 特別経費を追加
-            { key: '年間収支CF_万円', label: '年間CF (税引前)', format: '万円', isCF: true, decimal: 1 },
+            { key: '年間家賃収入_万円', label: '家賃収入 (年間)', format: '万円', decimal: 1, monthly: true }, // 月額表示を追加
+            { key: 'サブリース料率', label: 'サブリース料率', format: '%', decimal: 1, monthly: false },
+            { key: '年間大家の手取り_万円', label: '大家の手取り (年間)', format: '万円', decimal: 1, monthly: true }, // 月額表示を追加
+            { key: '年間ローン返済_万円', label: 'ローン返済 (年間)', format: '万円', decimal: 1, monthly: true }, // 月額表示を追加
+            { key: '年間管理修繕費_万円', label: '管理・修繕費 (年間)', format: '万円', decimal: 1, monthly: true }, // 月額表示を追加
+            { key: '年間固定資産税_万円', label: '固定資産税 (年間)', format: '万円', decimal: 1, monthly: false },
+            { key: '年間特別経費_万円', label: '特別経費 (年間)', format: '万円', decimal: 1, monthly: false }, // 特別経費を追加
+            { key: '年間収支CF_万円', label: '年間CF (税引前)', format: '万円', isCF: true, decimal: 1, monthly: true }, // 月額表示を追加
         ];
         
         // 特別経費の描画情報を保持する配列
         const expenseMarks = [];
 
-        // ★ 修正: 1年目のイベントを削除
+        // ★ イベント情報を配列で一元管理
         const EVENTS = [
             {
                 year: 35,
@@ -439,9 +462,6 @@
         // データポイント数 (年数)
         const TOTAL_YEARS = simulationData.length;
         
-        // 累積黒字化が達成される年（新しい前提に基づく予測値）
-        const BLACK_CROSSOVER_YEAR = 89; // 90年目以前
-
         // 建て替え検討時期 (50年目) のインデックス
         const REBUILDING_YEAR = 50; 
         const REBUILDING_INDEX = REBUILDING_YEAR - 1;
@@ -1174,12 +1194,16 @@
          */
         function setupAnnualMetricsTable() {
             const container = document.getElementById('annualMetricsItems');
-            // mdサイズ以上で2列、それ以下では1列にするため grid-cols-2 のクラスはDOMに直接設定
+            // 月額表示用の要素を分離し、text-smを適用
             container.innerHTML = annualMetricsKeys.map(item => `
                 <div class="flex flex-col p-2 bg-white rounded-lg border">
                     <span class="text-xs font-medium text-gray-500">${item.label}</span>
-                    <span id="${item.key.replace('_万円', 'AnnualValue')}" class="text-lg font-bold text-gray-900">
-                        0.0 ${item.format}
+                    <span class="flex items-baseline">
+                        <span id="${item.key.replace('_万円', 'AnnualValue')}" class="text-lg font-bold text-gray-900">
+                            0.0 ${item.format}
+                        </span>
+                        <!-- 月額表示用スロットを分離し、テキストサイズを小さく (text-sm) -->
+                        ${item.monthly ? `<span id="${item.key.replace('_万円', 'MonthlyValue')}" class="text-sm font-normal text-gray-600 ml-1"></span>` : ''}
                     </span>
                 </div>
             `).join('');
@@ -1212,7 +1236,7 @@
             
             const currentYear = currentYearIndex + 1;
 
-            // 現在の年数を表示 (1年目から60年目まで)
+            // 修正: 「投資開始●年目」に変更
             currentYearElement.textContent = formatNumber(Math.min(currentYear, TOTAL_YEARS), 0, '');
             
             // 累積収支のステータス表示
@@ -1231,7 +1255,8 @@
                 profitStatusElement.classList.remove('text-expense');
             } else {
                 // 累積赤字の場合
-                statusText = `累積赤字：-${formattedProfit} (黒字化まで後${yearsToCrossover}年)`;
+                // 修正: 「黒字化まで後●年」を「黒字化まで●年」に修正
+                statusText = `累積赤字：-${formattedProfit} (黒字化まで${yearsToCrossover}年)`;
                 profitStatusElement.classList.add('text-expense');
                 profitStatusElement.classList.remove('text-income');
             }
@@ -1254,10 +1279,17 @@
             
             // 年間収支構成要素の更新 (新規追加)
             annualMetricsKeys.forEach(item => {
+                // 年間値の要素
                 const element = document.getElementById(item.key.replace('_万円', 'AnnualValue'));
+                // 月額値の要素
+                const monthlyElement = document.getElementById(item.key.replace('_万円', 'MonthlyValue'));
+
                 if (element) {
                     let value = data[item.key];
                     let formattedValue;
+
+                    // 月額表示が必要な項目かチェック
+                    const needsMonthly = item.monthly && item.format === '万円';
 
                     if (item.format === '%') {
                         // 料率はパーセンテージで表示
@@ -1265,15 +1297,31 @@
                     } else if (item.format === '万円') {
                         // 万円は小数点第一位まで
                         formattedValue = formatNumber(value, item.decimal, item.format); // 3桁区切りと小数点第一位に変更
+                        
+                        // 月額の計算と追記
+                        if (needsMonthly) {
+                            const monthlyValue = value / 12;
+                            // 月額値は小数点第一位まで表示
+                            const formattedMonthly = formatNumber(monthlyValue, 1, '万円/月');
+                            // 月額専用の要素に設定
+                            if (monthlyElement) {
+                                monthlyElement.textContent = `(${formattedMonthly})`;
+                            }
+                        } else if (monthlyElement) {
+                            monthlyElement.textContent = ''; // 月額がない項目はクリア
+                        }
                     }
                     
                     element.textContent = formattedValue;
                     
                     // 年間CFのプラス・マイナスで色を変更
                     if (item.isCF) {
-                        element.style.color = value >= 0 ? tailwind.config.theme.extend.colors.income : tailwind.config.theme.extend.colors.expense;
+                        const color = value >= 0 ? tailwind.config.theme.extend.colors.income : tailwind.config.theme.extend.colors.expense;
+                        element.style.color = color;
+                        if (monthlyElement) monthlyElement.style.color = color; // 月額部分も同じ色にする
                     } else {
                         element.style.color = 'black';
+                        if (monthlyElement) monthlyElement.style.color = '#4B5563'; // 月額部分の色を灰色に固定
                     }
                 }
             });
