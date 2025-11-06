@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>期間ハイライト付き2本線グラフ</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        #lineChartCanvas {
+            border: 1px solid #ccc;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="lineChartCanvas" width="1080" height="1920"></canvas>
+
+    <script>
+        // ★修正ポイント 1: window.onloadでDOMのロードを待つ★
+        window.onload = function() {
+            // 描画設定
+            const CANVAS_WIDTH = 1080;
+            const CANVAS_HEIGHT = 1920;
+            const NUM_DATA_POINTS = 100;
+            
+            const ANIMATION_DURATION = 5000; // 5秒 (ミリ秒)
+            
+            // X軸の論理的な最大目盛り (99 * 4/3 = 132)
+            const X_AXIS_MAX_SCALE = (NUM_DATA_POINTS - 1) * (4/3); // 132
+            
+            // ★修正ポイント 2: グラフサイズを制御する新しい定数★
+            // グラフの描画幅と高さを明示的に定義
+            const GRAPH_AREA_WIDTH = 900; // グラフを描画する横幅
+            const GRAPH_AREA_HEIGHT = 1000; // グラフを描画する縦幅
+            
+            // グラフ周囲の余白 (軸のラベルスペース確保用)
+            const PADDING = 70; 
+
+            // canvas要素の取得
+            const canvas = document.getElementById('lineChartCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // ★★★ Y軸の固定値配列 (100個) ★★★
+            const data1 = [0, 2, 4, 10, 13, 17, 24, 28, 32, 36, 42, 45, 48, 51, 55, 60, 64, 69, 75, 80, 84, 85, 88, 93, 97, 98, 95, 99, 93, 89, 87, 85, 82, 79, 78, 77, 79, 81, 85, 87, 90, 93, 98, 99, 95, 91, 88, 86, 85, 86, 89, 92, 95, 98, 100, 95, 98, 93, 90, 88, 85, 84, 85, 87, 91, 94, 98, 93, 97, 94, 90, 86, 83, 80, 78, 79, 82, 85, 88, 92, 96, 99, 94, 90, 87, 85, 84, 82, 80, 78, 76, 75, 77, 80, 83, 87, 89, 93, 97, 95];
+            const data2 = [0, 5, 8, 11, 15, 18, 20, 23, 26, 28, 30, 32, 35, 37, 40, 41, 43, 46, 48, 50, 52, 53, 54, 55, 56, 57, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 62, 61, 60, 59, 58, 57, 56, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 49, 50, 51, 52, 53, 54, 55, 56, 55];
+            
+            data1[0] = 0; data2[0] = 0; 
+            
+            // ハイライト期間の定義 (データインデックス)
+            const SHADING_REGIONS = [
+                {start: 20, end: 50, title: "期間A: 安定成長期", bgColor: 'rgba(66, 132, 245, 0.2)', borderColor: 'rgba(66, 132, 245, 0.7)'},
+                {start: 80, end: 90, title: "期間B: 変動期", bgColor: 'rgba(255, 99, 71, 0.2)', borderColor: 'rgba(255, 99, 71, 0.7)'}
+            ]; 
+
+            // アニメーション用の変数
+            let startTime = null;
+            
+            // 追跡位置の定数: 75% = 0.75
+            const TRACKING_RATIO = 0.75; 
+            const ZOOM_FACTOR = 1 / TRACKING_RATIO; 
+            
+            // データポイントのインデックス最大値
+            const MAX_DATA_INDEX = NUM_DATA_POINTS - 1; 
+            
+            // ★修正ポイント 3: グラフのオフセット（開始座標）計算★
+            const offsetX = PADDING; // Y軸ラベルのスペースを確保するため、左端は固定
+            const offsetY = PADDING; // 上端は固定
+            
+            /**
+             * 軸と共通要素を描画するヘルパー関数
+             */
+            const drawAxes = (ctx, MAX_VALUE_DISPLAY) => {
+                // --- グリッドラインと目盛り値の計算 ---
+                
+                const TARGET_STEPS = 4; // 目標とするステップ数 (0 to MaxValue)
+                let Y_AXIS_STEP_VALUE = 1;
+                
+                if (MAX_VALUE_DISPLAY > 0) {
+                    const targetStep = MAX_VALUE_DISPLAY / TARGET_STEPS;
+                    let magnitude = Math.pow(10, Math.floor(Math.log10(targetStep)));
+                    if (magnitude === 0) magnitude = 1;
+
+                    const candidates = [1, 2, 5, 10].map(f => f * magnitude);
+
+                    for (const step of candidates) {
+                        if (MAX_VALUE_DISPLAY / step <= TARGET_STEPS + 1) { 
+                             Y_AXIS_STEP_VALUE = step;
+                             break;
+                        }
+                    }
+                }
+                const MAX_GRID_VALUE = Math.ceil(MAX_VALUE_DISPLAY / Y_AXIS_STEP_VALUE) * Y_AXIS_STEP_VALUE;
+
+                
+                ctx.strokeStyle = '#e0e0e0'; 
+                ctx.lineWidth = 1;
+                ctx.font = '30px Arial';
+                ctx.fillStyle = '#333';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                
+                const yAxisBottom = offsetY + GRAPH_AREA_HEIGHT; // X軸のY座標
+
+                for (let value = 0; value <= MAX_GRID_VALUE; value += Y_AXIS_STEP_VALUE) {
+                    // Y座標: 下端から (value / MAX_VALUE_DISPLAY) の比率で上へ
+                    const y = yAxisBottom - (value / MAX_VALUE_DISPLAY) * GRAPH_AREA_HEIGHT;
+
+                    // 1. グリッド線
+                    if (value !== 0) { 
+                        ctx.beginPath();
+                        ctx.moveTo(offsetX, y);
+                        ctx.lineTo(offsetX + GRAPH_AREA_WIDTH, y);
+                        ctx.stroke();
+                    }
+
+                    // 2. 目盛りラベル
+                    ctx.fillStyle = '#333';
+                    ctx.fillText(value.toString(), offsetX - 10, y);
+                }
+                
+                // --- Y軸とX軸の描画 (グリッド線の上に描画) ---
+                ctx.strokeStyle = '#555';
+                ctx.lineWidth = 2;
+
+                // Y軸
+                ctx.beginPath();
+                ctx.moveTo(offsetX, offsetY);
+                ctx.lineTo(offsetX, yAxisBottom);
+                ctx.stroke();
+                
+                // X軸
+                ctx.beginPath();
+                ctx.moveTo(offsetX, yAxisBottom);
+                ctx.lineTo(offsetX + GRAPH_AREA_WIDTH, yAxisBottom);
+                ctx.stroke();
+            };
+
+            /**
+             * X軸のインデックスラベルと目盛りを描画する関数
+             */
+            const drawXAxisLabels = (ctx, actualXScaleStep, startXScale, endXScale) => {
+                const maxLabels = 5;
+                const tickLength = 10;
+                
+                const I_start = Math.max(0, Math.ceil(startXScale));
+                const I_end = Math.min(MAX_DATA_INDEX, Math.floor(endXScale));
+                
+                const N_visible = I_end - I_start + 1;
+                
+                const stride = Math.max(1, Math.ceil(N_visible / maxLabels));
+                
+                ctx.font = '24px Arial';
+                ctx.fillStyle = '#333';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+
+                const yAxisBottom = offsetY + GRAPH_AREA_HEIGHT; // X軸のY座標
+                const yLabel = yAxisBottom + 10;
+                
+                for (let i = I_start; i <= I_end; i++) {
+                    if (i % stride === 0 || i === I_start || i === I_end) {
+                        const pointScaleValue = i;
+                        // ★修正ポイント 4: X座標の計算にoffsetXを使用★
+                        const x = offsetX + (pointScaleValue - startXScale) * actualXScaleStep;
+                        
+                        // 1. 目盛り線 (tick)
+                        ctx.strokeStyle = '#555';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(x, yAxisBottom);
+                        ctx.lineTo(x, yAxisBottom + tickLength / 2);
+                        ctx.stroke();
+                        
+                        // 2. ラベル (インデックス値)
+                        ctx.fillText(i.toString(), x, yLabel);
+                    }
+                }
+            };
+            
+            /**
+             * 背景シェーディングとタイトルを描画する関数
+             */
+            const drawShadingAndTitles = (ctx, regions, actualXScaleStep, startXScale, endXScale) => {
+                const yStart = offsetY; 
+                const height = GRAPH_AREA_HEIGHT; 
+                const graphRight = offsetX + GRAPH_AREA_WIDTH;
+                
+                regions.forEach(region => {
+                    const startScale = region.start;
+                    const endScale = region.end; 
+
+                    // 描画開始/終了のX座標
+                    // ★修正ポイント 5: X座標の計算にoffsetXを使用★
+                    const xStartMark = offsetX + (startScale - startXScale) * actualXScaleStep;
+                    const xEndMark = offsetX + (endScale - startXScale) * actualXScaleStep;
+
+                    let drawX = xStartMark;
+                    let drawWidth = xEndMark - xStartMark;
+                    
+                    // --- 描画領域のクリッピングと調整 ---
+                    
+                    if (drawX < offsetX) { // PADDING -> offsetX
+                        drawWidth -= (offsetX - drawX);
+                        drawX = offsetX;
+                    }
+                    if (drawX + drawWidth > graphRight) { // CANVAS_WIDTH - PADDING -> graphRight
+                        drawWidth = graphRight - drawX;
+                    }
+                    
+                    // 2. 背景色と枠線の描画
+                    if (drawWidth > 0) {
+                        ctx.fillStyle = region.bgColor;
+                        ctx.fillRect(drawX, yStart, drawWidth, height);
+
+                        ctx.strokeStyle = region.borderColor;
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(drawX, yStart, drawWidth, height);
+
+                        // 3. タイトル描画
+                        if (region.title) {
+                            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; 
+                            ctx.font = 'bold 32px Arial';
+                            ctx.textBaseline = 'top';
+
+                            let textX;
+
+                            if (endScale <= endXScale) {
+                                ctx.textAlign = 'center';
+                                textX = (xStartMark + xEndMark) / 2;
+                            } else if (startScale < endXScale) {
+                                ctx.textAlign = 'right';
+                                textX = graphRight - 10; 
+                            } else {
+                                return;
+                            }
+
+                            const clippedTextX = Math.max(offsetX + 5, Math.min(graphRight - 5, textX));
+                            
+                            if (clippedTextX > offsetX && clippedTextX < graphRight) {
+                                ctx.fillText(region.title, clippedTextX, yStart + 10);
+                            }
+                        }
+                    }
+                });
+            };
+
+            /**
+             * 単一の線グラフを描画する関数
+             */
+            const drawSingleLine = (ctx, data, color, currentRatio, MAX_VALUE_DISPLAY, actualXScaleStep, startXScale) => {
+                const currentDataIndex = MAX_DATA_INDEX * currentRatio; 
+                const loopEndIndex = (currentRatio >= 1.0) ? MAX_DATA_INDEX : Math.min(MAX_DATA_INDEX, Math.ceil(currentDataIndex));
+
+                ctx.strokeStyle = color; 
+                ctx.lineWidth = 4;
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+
+                ctx.beginPath();
+                
+                const startX = offsetX;
+                // ★修正ポイント 6: Y座標の計算にoffsetYとGRAPH_AREA_HEIGHTを使用★
+                const initialY = (offsetY + GRAPH_AREA_HEIGHT) - (data[0] / MAX_VALUE_DISPLAY) * GRAPH_AREA_HEIGHT;
+                
+                ctx.moveTo(startX, initialY);
+
+
+                let currentTipX = startX; 
+                let currentTipY = initialY; 
+                let currentValue = data[0]; 
+
+                for (let i = 0; i <= loopEndIndex; i++) {
+                    const pointScaleValue = i; 
+
+                    const x = offsetX + (pointScaleValue - startXScale) * actualXScaleStep;
+                    const y = (offsetY + GRAPH_AREA_HEIGHT) - (data[i] / MAX_VALUE_DISPLAY) * GRAPH_AREA_HEIGHT;
+                    
+                    // --- 補間ロジック ---
+                    if (i > currentDataIndex && currentRatio < 1.0) {
+                        const floorIndex = Math.floor(currentDataIndex);
+                        const partialRatio = currentDataIndex - floorIndex; 
+                        
+                        const prevScaleValue = floorIndex;
+                        const prevX = offsetX + (prevScaleValue - startXScale) * actualXScaleStep;
+                        const prevY = (offsetY + GRAPH_AREA_HEIGHT) - (data[floorIndex] / MAX_VALUE_DISPLAY) * GRAPH_AREA_HEIGHT;
+
+                        const nextX = x;
+                        const nextY = y;
+
+                        currentTipX = prevX + (nextX - prevX) * partialRatio;
+                        currentTipY = prevY + (nextY - prevY) * partialRatio;
+                        
+                        const prevValue = data[floorIndex];
+                        const nextValue = data[i];
+                        currentValue = prevValue + (nextValue - prevValue) * partialRatio;
+
+                        ctx.lineTo(currentTipX, currentTipY);
+                        break;
+                    } else { // 描画実行
+                        ctx.lineTo(x, y);
+                        currentTipX = x;
+                        currentTipY = y;
+                        currentValue = data[i];
+                    }
+                }
+                
+                ctx.stroke();
+                
+                return { currentTipX, currentTipY, currentValue, color };
+            };
+
+
+            /**
+             * グラフを描画するメイン関数
+             */
+            const drawChart = (currentRatio) => {
+                ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                
+                // --- Y軸の最大値計算 (動的) ---
+                const currentDataIndex = MAX_DATA_INDEX * currentRatio; 
+                const dataSlice1 = data1.slice(0, Math.ceil(currentDataIndex));
+                const dataSlice2 = data2.slice(0, Math.ceil(currentDataIndex));
+                
+                const combinedDataSlice = [...dataSlice1, ...dataSlice2]; 
+                
+                let dataMaxValue = 0;
+                if (combinedDataSlice.length > 0) {
+                    dataMaxValue = Math.max(...combinedDataSlice);
+                }
+                
+                // 最大値の125%を適用
+                const MAX_VALUE_DISPLAY = Math.ceil(dataMaxValue * 1.25); 
+                const clampedMaxValueDisplay = Math.max(10, MAX_VALUE_DISPLAY); // 最小値を10に設定
+
+
+                // --- 2. X軸の描画範囲の決定 (75%固定ロジック) ---
+                let viewRange = currentDataIndex * ZOOM_FACTOR;
+                viewRange = Math.min(viewRange, X_AXIS_MAX_SCALE); 
+                
+                const startXScale = 0; 
+                const endXScale = startXScale + viewRange;
+
+                // ★修正ポイント 7: グラフの描画幅 (GRAPH_AREA_WIDTH) を使用★
+                const actualXScaleRange = endXScale - startXScale;
+                const actualXScaleStep = GRAPH_AREA_WIDTH / actualXScaleRange;
+                
+                // --- 2.5. 背景シェーディングとタイトルの描画 ---
+                drawShadingAndTitles(ctx, SHADING_REGIONS, actualXScaleStep, startXScale, endXScale);
+
+                // --- 1. 軸、ラベル、グリッドラインの描画 ---
+                drawAxes(ctx, clampedMaxValueDisplay);
+                
+                // ★追加: X軸インデックスラベルの描画★
+                drawXAxisLabels(ctx, actualXScaleStep, startXScale, endXScale);
+                
+                // --- 3. 線グラフの描画 (2本) ---
+                const tip1 = drawSingleLine(ctx, data1, '#4A90E2', currentRatio, clampedMaxValueDisplay, actualXScaleStep, startXScale); // 青
+                const tip2 = drawSingleLine(ctx, data2, '#FF4500', currentRatio, clampedMaxValueDisplay, actualXScaleStep, startXScale); // 赤
+                
+                const tipsToDisplay = [tip1, tip2];
+
+                // --- 4. 先端の値の表示 (両方のグラフ) ---
+                for (const tip of tipsToDisplay) {
+                    const displayValue = Math.round(tip.currentValue);
+
+                    // テキストのスタイル
+                    ctx.fillStyle = tip.color; 
+                    ctx.font = 'bold 36px Arial'; 
+                    ctx.textBaseline = 'middle';
+                    
+                    const buffer = 15; 
+                    
+                    // テキスト配置ロジック
+                    const graphRight = offsetX + GRAPH_AREA_WIDTH;
+                    if (tip.currentTipX > graphRight - 100) { 
+                        ctx.textAlign = 'right'; 
+                        const textX = tip.currentTipX - buffer; 
+                        const textY = tip.currentTipY - buffer; 
+                        ctx.fillText(displayValue.toString(), textX, textY);
+                    } else {
+                        ctx.textAlign = 'left'; 
+                        const textX = tip.currentTipX + buffer; 
+                        const textY = tip.currentTipY - buffer; 
+                        ctx.fillText(displayValue.toString(), textX, textY);
+                    }
+                }
+                
+                // 5. 先端の円の描画 (テキストの後で重ねて描画)
+                for (const tip of tipsToDisplay) {
+                    ctx.beginPath();
+                    ctx.arc(tip.currentTipX, tip.currentTipY, 8, 0, 2 * Math.PI);
+                    ctx.fillStyle = tip.color;
+                    ctx.fill();
+                }
+
+                // --- 6. 横軸のデバッグ表示 (確認用) ---
+                const tipRatio = (tip1.currentTipX - offsetX) / GRAPH_AREA_WIDTH; // グラフエリア内での比率
+                ctx.fillStyle = '#4A90E2';
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.fillText(
+                    `Y軸最大値: ${clampedMaxValueDisplay}, X軸目盛り: [${startXScale.toFixed(2)}, ${endXScale.toFixed(2)}] - 先端位置: ${(tipRatio * 100).toFixed(1)}%`,
+                    CANVAS_WIDTH / 2,
+                    offsetY + GRAPH_AREA_HEIGHT + 40 // デバッグ行の位置調整
+                );
+            };
+
+            /**
+             * アニメーションループ
+             */
+            const animate = (timestamp) => {
+                if (!startTime) {
+                    startTime = timestamp;
+                }
+
+                const elapsed = timestamp - startTime;
+                let ratio = Math.min(elapsed / ANIMATION_DURATION, 1);
+
+                drawChart(ratio);
+
+                // グラフが消えないように、常にリクエストを継続
+                requestAnimationFrame(animate); 
+            };
+
+            // アニメーション開始
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>
