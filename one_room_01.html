@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蔵前ワンルーム投資 60年間 詳細シミュレーション</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* カスタムフォントとレスポンシブコンテナ */
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 75%; /* 4:3のアスペクト比 (高さ = 幅 * 0.75) */
+            height: 0;
+            overflow: hidden;
+            /* max-width: 1200px; */ /* 親要素に max-w-4xlがあるため不要 */
+            margin: 0 auto;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 4, 0, 0.05);
+        }
+        /* プログレスバーのカスタムスタイル */
+        #progressBar {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #d1d5db;
+            outline: none;
+            border-radius: 4px;
+        }
+        #progressBar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #3B82F6;
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        #progressBar::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #3B82F6;
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        /* 再生ボタンのスタイル */
+        #playPauseButton {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #10B981;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.15s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        #playPauseButton:hover {
+            background-color: #059669;
+        }
+        
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'asset': '#3B82F6',   // マンションの資産価値 (青)
+                        'income': '#10B981',  // 累積収入 (緑)
+                        'loan': '#F59E0B',    // ローン残債 (オレンジ)
+                        'expense': '#EF4444', // 累積経費 (既存の赤系)
+                        'profit': '#FF0000',  // 累積収支 (鮮やかな赤に変更)
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div class="max-w-6xl mx-auto"> <!-- 最大幅を広げ、横並びを活かす -->
+        <header class="text-center mb-8">
+            <h1 class="3xl sm:text-4xl font-extrabold text-gray-800 mb-2">
+                蔵前ワンルーム投資 60年間 詳細シミュレーション
+            </h1>
+            <p class="text-lg text-gray-500">
+                （家賃低下、サブリース料率低下、経費増加、RC減価償却を考慮）
+            </p>
+        </header>
+
+        <!-- Main Content Grid: lgサイズ以上で2カラムレイアウトに -->
+        <div class="grid grid-cols-1 lg:grid-cols-7 gap-6">
+
+            <!-- Column 1: Chart and Controls (4/7幅) -->
+            <div class="lg:col-span-4 flex flex-col">
+                <!-- グラフ描画エリア -->
+                <div class="chart-container rounded-xl shadow-2xl flex-grow">
+                    <canvas id="investmentChart"></canvas>
+                </div>
+
+                <!-- 操作パネル (再生ボタンとプログレスバー) -->
+                <div class="flex items-center space-x-4 mt-6 p-4 bg-white rounded-xl shadow-lg border border-gray-100">
+                    <button id="playPauseButton">
+                        <!-- SVGアイコン (Play/Pause) -->
+                        <svg id="playIcon" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                        </svg>
+                        <svg id="pauseIcon" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6 hidden">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 9H7a1 1 0 000 2h2a1 1 0 000-2zm4 0h-2a1 1 0 000 2h2a1 1 0 000-2z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    <input type="range" id="progressBar" min="0" max="100" value="0" step="0.001">
+                </div>
+            </div>
+
+            <!-- Column 2: Legend and Metrics (3/7幅) -->
+            <div id="legendContainer" class="lg:col-span-3 mt-8 lg:mt-0 p-6 bg-white rounded-xl shadow-lg border border-gray-100">
+                <!-- タイトル「グラフ凡例と現在値」を削除しました -->
+                <div id="statusDisplay" class="mb-4 text-center">
+                    <p class="text-2xl font-semibold text-gray-900">
+                        <span id="currentYear" class="text-asset">0</span> 年目 
+                        <span class="text-sm font-medium text-gray-500">(累積黒字化 89年目)</span>
+                    </p>
+                    <p id="profitStatus" class="mt-2 text-xl font-bold transition-colors duration-500"></p>
+                    
+                </div>
+                <div id="legendItems" class="grid grid-cols-2 gap-4">
+                    <!-- 凡例アイテムはJSで動的に挿入されます -->
+                </div>
+                
+                <!-- 新規追加: 年間収支構成テーブル -->
+                <div id="annualMetrics" class="mt-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3 border-t pt-3">
+                        年間収支の構成要素（現在年）
+                    </h3>
+                    <div class="grid grid-cols-2 gap-4" id="annualMetricsItems">
+                        <!-- 年間メトリックアイテムはJSで動的に挿入されます -->
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 共通の数値を3桁区切りにフォーマットするヘルパー関数 ---
+        const formatNumber = (num, decimalPlaces = 0, unit = '') => {
+            // 値がnullやundefinedでないことを確認
+            if (num === null || num === undefined || isNaN(num)) {
+                return `N/A ${unit}`;
+            }
+            
+            // 負の数の処理
+            const isNegative = num < 0;
+            const absNum = Math.abs(num);
+            
+            // 小数点以下の処理
+            const fixedNum = absNum.toFixed(decimalPlaces);
+            let parts = fixedNum.split('.');
+            
+            // 整数部分をカンマ区切りに
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            
+            // 負の符号を付ける
+            if (isNegative) {
+                parts[0] = '-' + parts[0];
+            }
+            
+            // 小数点以下があれば結合
+            return parts.join('.') + (unit === '%' ? ' %' : unit);
+        };
+        
+        // ----------------------------------------------------
+        // 1. シミュレーションデータ（60年目までのデータ生成ロジック）
+        // ----------------------------------------------------
+        
+        // 発生する特別経費の定義
+        const specialExpenses = [
+            // エアコン交換 (10年ごと)
+            { year: 10, cost: 15.0, label: 'エアコン交換' },
+            { year: 20, cost: 15.0, label: 'エアコン交換' },
+            { year: 30, cost: 15.0, label: 'エアコン交換' },
+            { year: 40, cost: 15.0, label: 'エアコン交換' },
+            { year: 50, cost: 15.0, label: 'エアコン交換' },
+            { year: 60, cost: 15.0, label: 'エアコン交換' },
+            // 給湯器交換/水回り修理 (15年ごと)
+            { year: 15, cost: 10.0, label: '給湯器/水回り修理' },
+            { year: 30, cost: 10.0, label: '給湯器/水回り修理' },
+            { year: 45, cost: 10.0, label: '給湯器/水回り修理' },
+            { year: 60, cost: 10.0, label: '給湯器/水回り修理' },
+            // 壁紙・床張替え (12年ごと)
+            { year: 12, cost: 18.0, label: '壁紙・床張替え' },
+            { year: 24, cost: 18.0, label: '壁紙・床張替え' },
+            { year: 36, cost: 18.0, label: '壁紙・床張替え' },
+            { year: 48, cost: 18.0, label: '壁紙・床張替え' },
+            { year: 60, cost: 18.0, label: '壁紙・床張替え' },
+        ];
+        
+        const specialExpenseMap = new Map();
+        specialExpenses.forEach(exp => {
+            if (!specialExpenseMap.has(exp.year)) {
+                specialExpenseMap.set(exp.year, { totalCost: 0, labels: [] });
+            }
+            const data = specialExpenseMap.get(exp.year);
+            data.totalCost += exp.cost;
+            data.labels.push(exp.label);
+        });
+
+        const simulationData = (function() {
+            // --- 初期パラメーター ---
+            const initialRent = 96.0; // 万円/年 (満室時年間家賃)
+            const initialMgmtCost = 12.5; // 万円/年 (初期の管理・修繕費)
+            const initialPropTax = 25.0; // 万円/年 (初期の固定資産税・都市計画税の目安)
+            const loanPayment = 83.54; // 万円/年 (35年ローン元利金返済額)
+            const purchasePrice = 2500.0; // 万円 (物件価格 - グラフ描画には使用しない)
+            
+            // 業者利益 20% (500万円) を控除したスタート価格
+            const initialAssetValue = purchasePrice * 0.8; // 2000.0 万円
+            
+            // --- 減価償却と残存価値の計算 ---
+            const RC_LIFE = 47; 
+            const RESIDUAL_RATE = 0.2; // 20%の残存価値を仮定 (土地の価値や最低評価額)
+            
+            // 固定資産税評価額の減価償却率 (評価額が初期税金25万円に対応すると仮定し、20%を残存とする)
+            const taxBasisDepreciationRate = (initialPropTax - initialPropTax * RESIDUAL_RATE) / RC_LIFE; 
+            // グラフ表示用資産価値の減価償却率 (業者利益を控除した2000万円から20%を残存とする)
+            const assetValueDepreciationRate = (initialAssetValue - initialAssetValue * RESIDUAL_RATE) / RC_LIFE; 
+
+            // --- ローン残債 (旧シミュレーションから流用した簡略化された残高推移) ---
+            // ローン元本は2500万円で計算
+            const L_amortization = [2500.0, 2459.7, 2418.5, 2376.2, 2332.9, 2288.5, 2242.9, 2196.1, 2148.0, 2098.6, 2047.8, 1995.6, 1942.0, 1887.0, 1830.4, 1772.3, 1712.5, 1651.1, 1587.9, 1522.9, 1456.0, 1387.1, 1316.3, 1243.3, 1168.2, 1090.8, 1011.0, 928.7, 843.7, 755.9, 665.3, 571.7, 474.9, 374.9, 271.3, 0.0];
+
+            let accCF = 0;
+            let accIncome = 0;
+            let accExpense = 0;
+            let currentRent = initialRent;
+            const data = [];
+
+            for (let t = 1; t <= 60; t++) {
+                
+                // --- 1. 家賃の計算 (5年ごとに1%ダウン) ---
+                if (t > 10 && (t - 1) % 5 === 0) {
+                    currentRent *= 0.99; // 11, 16, 21...年目に1%ダウン
+                }
+
+                // --- 2. サブリース料率の計算 ---
+                let subleaseRate = 0.85;
+                if (t >= 11) subleaseRate = 0.85 - Math.floor((t - 1) / 10) * 0.01; // 10年ごとに1%ダウン (85% → 80%が最低)
+                subleaseRate = Math.max(0.80, subleaseRate); 
+                const netIncomeAnnual = currentRent * subleaseRate; // N_t (家賃低下と料率低下を反映)
+
+                // --- 3. 管理・修繕費の計算 (10年ごとに10%アップ) ---
+                let mgmtCost = initialMgmtCost;
+                if (t >= 11) {
+                    let multiplier = 1.0;
+                    for (let i = 1; i <= Math.floor((t - 1) / 10); i++) {
+                        multiplier *= 1.1; 
+                    }
+                    mgmtCost = initialMgmtCost * multiplier;
+                }
+                
+                // --- 4. 特別経費の加算 ---
+                const specialCostData = specialExpenseMap.get(t) || { totalCost: 0, labels: [] };
+                const specialCost = specialCostData.totalCost;
+
+                // --- 5. 固定資産税の計算 (RC減価償却) ---
+                let propTax = Math.max(initialPropTax - taxBasisDepreciationRate * t, initialPropTax * RESIDUAL_RATE);
+
+                // --- 6. 経費とキャッシュフローの計算 ---
+                const annualLoanPayment = t <= 35 ? loanPayment : 0; // 35年でローン完済
+                // 年間経費に特別経費を加算
+                const annualExpense = annualLoanPayment + mgmtCost + propTax + specialCost; // E_t 
+                const cashFlowAnnual = netIncomeAnnual - annualExpense; // CF_t
+
+                // --- 7. 累積値の計算 ---
+                accCF += cashFlowAnnual; // AccCF_t
+                accIncome += netIncomeAnnual;
+                accExpense += annualExpense;
+
+                // --- 8. グラフ表示用値 ---
+                // 資産価値 (AV_t): 減価償却 (20%残存価値)
+                let assetValue = Math.max(initialAssetValue - assetValueDepreciationRate * t, initialAssetValue * RESIDUAL_RATE); 
+                // ローン残債 (L_t)
+                const loanRemaining = t <= 35 ? (L_amortization[t] || 0) : 0; 
+
+                data.push({
+                    "年": t,
+                    "資産価値_万円": parseFloat(assetValue.toFixed(2)),
+                    "累積収入_万円": parseFloat(accIncome.toFixed(2)), // 項目名を修正
+                    "ローン残債_万円": parseFloat(loanRemaining.toFixed(2)),
+                    "累積経費_万円": parseFloat(accExpense.toFixed(2)),
+                    "累積収支_万円": parseFloat(accCF.toFixed(2)),
+                    // --- 年間収支構成要素 ---
+                    "年間家賃収入_万円": parseFloat(currentRent.toFixed(2)), 
+                    "サブリース料率": parseFloat(subleaseRate.toFixed(4)),
+                    "年間大家の手取り_万円": parseFloat(netIncomeAnnual.toFixed(2)), 
+                    "年間管理修繕費_万円": parseFloat(mgmtCost.toFixed(2)),
+                    "年間固定資産税_万円": parseFloat(propTax.toFixed(2)),
+                    "年間ローン返済_万円": parseFloat(annualLoanPayment.toFixed(2)),
+                    "年間特別経費_万円": parseFloat(specialCost.toFixed(2)), // 特別経費を追加
+                    "年間収支CF_万円": parseFloat(cashFlowAnnual.toFixed(2)),
+                    "特別経費ラベル": specialCostData.labels.join(', ') // ラベル情報を追加
+                });
+            }
+            return data;
+        })();
+
+        // データのキーと表示名、色のマッピング
+        const dataKeys = [
+            { key: '資産価値_万円', label: '資産価値', color: tailwind.config.theme.extend.colors.asset, decimal: 0 }, // 整数表示
+            { key: '累積収入_万円', label: '累積家賃収入', color: tailwind.config.theme.extend.colors.income, decimal: 0 }, // ラベルを修正, 整数表示
+            { key: 'ローン残債_万円', label: 'ローン残債', color: tailwind.config.theme.extend.colors.loan, decimal: 0 }, // 整数表示
+            { key: '累積経費_万円', label: '累計支出', color: tailwind.config.theme.extend.colors.expense, decimal: 0 }, // 整数表示
+            { key: '累積収支_万円', label: '累積収支', color: tailwind.config.theme.extend.colors.profit, decimal: 0 }, // 整数表示
+        ];
+        
+        // 年間収支構成要素の定義 (新規追加)
+        const annualMetricsKeys = [
+            { key: '年間家賃収入_万円', label: '家賃収入 (年間)', format: '万円', decimal: 1 }, 
+            { key: 'サブリース料率', label: 'サブリース料率', format: '%', decimal: 1 },
+            { key: '年間大家の手取り_万円', label: '大家の手取り (年間)', format: '万円', decimal: 1 }, 
+            { key: '年間ローン返済_万円', label: 'ローン返済 (年間)', format: '万円', decimal: 1 },
+            { key: '年間管理修繕費_万円', label: '管理・修繕費 (年間)', format: '万円', decimal: 1 },
+            { key: '年間固定資産税_万円', label: '固定資産税 (年間)', format: '万円', decimal: 1 },
+            { key: '年間特別経費_万円', label: '特別経費 (年間)', format: '万円', decimal: 1 }, // 特別経費を追加
+            { key: '年間収支CF_万円', label: '年間CF (税引前)', format: '万円', isCF: true, decimal: 1 },
+        ];
+        
+        // 特別経費の描画情報を保持する配列
+        const expenseMarks = [];
+
+
+        // ----------------------------------------------------
+        // 2. グラフ描画定数と初期設定 
+        // ----------------------------------------------------
+
+        const canvas = document.getElementById('investmentChart');
+        const ctx = canvas.getContext('2d');
+        const progressBar = document.getElementById('progressBar');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+
+        let width, height;
+
+        const padding = 60;
+        const xMin = padding;
+        const yMin = padding;
+        let xMax, yMax;
+
+        // Y軸の最大値 (累積家賃収入の最大値に合わせて5000万円に設定)
+        const Y_MAX_VALUE = 5000;
+        // アニメーション時間 (ミリ秒)
+        const ANIMATION_DURATION = 50000; 
+        // データポイント数 (年数)
+        const TOTAL_YEARS = simulationData.length;
+        
+        // 累積黒字化が達成される年（新しい前提に基づく予測値）
+        const BLACK_CROSSOVER_YEAR = 89; // 90年目以前
+
+        // 建て替え検討時期 (50年目) のインデックス
+        const REBUILDING_YEAR = 50; 
+        const REBUILDING_INDEX = REBUILDING_YEAR - 1;
+        
+        // ローン完済点 (35年目) のインデックス
+        const LOAN_END_INDEX = 34;
+        // ローン完済時のX, Y座標を保持するための変数
+        let loanEndPos = { x: 0, y: 0 };
+
+
+        let startTime = null;
+        let animationFrameId;
+        let isPlaying = true; // 再生状態
+        let currentProgress = 0; // 0.0 to 1.0
+
+        /**
+         * Canvasと描画領域のサイズを設定する
+         */
+        function setCanvasSize() {
+            const container = canvas.parentElement;
+            const dpr = window.devicePixelRatio || 1;
+            width = container.clientWidth;
+            height = container.clientHeight;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+
+            xMax = width - padding;
+            yMax = height - padding;
+            
+            // ローン完済時の座標を計算して保存
+            if (LOAN_END_INDEX < TOTAL_YEARS) {
+                loanEndPos.x = scaleX(LOAN_END_INDEX);
+                loanEndPos.y = scaleY(0);
+            }
+            
+            // 特別経費マークの位置を事前に計算
+            calculateExpenseMarks();
+        }
+
+        /**
+         * 特別経費のマークの位置を事前に計算し、配列に格納する
+         */
+        function calculateExpenseMarks() {
+            expenseMarks.length = 0; // 配列をリセット
+            const expenseKey = '累積経費_万円';
+            const color = tailwind.config.theme.extend.colors.expense;
+
+            simulationData.forEach((dataPoint, i) => {
+                if (dataPoint["年間特別経費_万円"] > 0) {
+                    const x = scaleX(i);
+                    const y = scaleY(dataPoint[expenseKey]);
+                    expenseMarks.push({
+                        x: x,
+                        y: y,
+                        label: dataPoint["特別経費ラベル"],
+                        color: color,
+                        year: dataPoint["年"]
+                    });
+                }
+            });
+        }
+
+
+        /**
+         * Y軸の値（万円）をCanvasのY座標に変換する
+         * @param {number} value - 万円単位の値
+         * @returns {number} CanvasのY座標
+         */
+        function scaleY(value) {
+            // Y軸の範囲を-1500万円から5000万円に設定して、最大赤字額に対応
+            const Y_MIN_DRAWABLE_VALUE = -1500;
+            const Y_TOTAL_RANGE = Y_MAX_VALUE - Y_MIN_DRAWABLE_VALUE;
+            const range = yMax - yMin;
+            
+            // Y軸は上が0、下が最大値なので、 (Y_MAX_VALUE - value) で反転させる
+            const normalizedValue = (Y_MAX_VALUE - value) / Y_TOTAL_RANGE; 
+            return yMin + normalizedValue * range;
+        }
+
+        /**
+         * 年数（X軸のインデックス）をCanvasのX座標に変換する
+         * @param {number} yearIndex - 0からTOTAL_YEARS - 1までのインデックス
+         * @returns {number} CanvasのX座標
+         */
+        function scaleX(yearIndex) {
+            const range = xMax - xMin;
+            if (TOTAL_YEARS <= 1) return xMin;
+            return xMin + (yearIndex / (TOTAL_YEARS - 1)) * range;
+        }
+
+        // ----------------------------------------------------
+        // 3. グラフ描画関数
+        // ----------------------------------------------------
+
+        /**
+         * グラフの軸と目盛りを描画する
+         */
+        function drawAxes() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.font = '10px Inter, sans-serif';
+
+            // X軸 (下端) と Y軸 (左端) を描画
+            ctx.beginPath();
+            ctx.strokeStyle = '#cccccc';
+            ctx.lineWidth = 1;
+            ctx.moveTo(xMin, yMax);
+            ctx.lineTo(xMax, yMax);
+            ctx.moveTo(xMin, yMin);
+            ctx.lineTo(xMin, yMax);
+            ctx.stroke();
+
+            // X軸 (年数) 目盛りとラベル (10年ごと)
+            ctx.fillStyle = '#6b7280';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let i = 0; i < TOTAL_YEARS; i += 10) { 
+                const x = scaleX(i);
+                ctx.fillText(`${simulationData[i].年}年`, x, yMax + 5);
+                ctx.beginPath();
+                ctx.moveTo(x, yMax);
+                ctx.lineTo(x, yMax - 5);
+                ctx.strokeStyle = '#cccccc';
+                ctx.stroke();
+            }
+            // 最後の年 (60年目)
+            const lastIndex = TOTAL_YEARS - 1;
+            const xLast = scaleX(lastIndex);
+            ctx.fillText(`${simulationData[lastIndex].年}年`, xLast, yMax + 5);
+            
+            // Y軸 (金額) 目盛りとラベル (1000万円ごと)
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            const Y_MIN_DRAWABLE_VALUE = -1500;
+            const Y_AXIS_VALUES = [];
+            for (let value = Y_MIN_DRAWABLE_VALUE; value <= Y_MAX_VALUE; value += 1000) {
+                Y_AXIS_VALUES.push(value);
+            }
+            // 0万円を確実に含める
+            if (!Y_AXIS_VALUES.includes(0)) Y_AXIS_VALUES.push(0); 
+            Y_AXIS_VALUES.sort((a, b) => a - b);
+            
+            Y_AXIS_VALUES.forEach(value => {
+                const y = scaleY(value);
+                
+                if (value === 0) {
+                    // 0万円ラインを強調表示 (X軸)
+                    ctx.strokeStyle = '#374151'; // 濃いグレー
+                    ctx.lineWidth = 3; // 1.5倍の3に変更
+                    ctx.fillText(`${formatNumber(value, 0, '万円')}`, xMin - 5, y);
+                } else {
+                    ctx.strokeStyle = '#cccccc';
+                    ctx.lineWidth = 1;
+                    ctx.fillText(`${formatNumber(value, 0, '万円')}`, xMin - 5, y);
+                }
+                
+                // グリッド線
+                ctx.beginPath();
+                ctx.moveTo(xMin, y);
+                ctx.lineTo(xMax, y);
+                ctx.setLineDash([2, 2]);
+                ctx.stroke();
+                
+                // 0万円の横線を追加
+                if (value === 0) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#374151'; // 濃いグレー
+                    ctx.lineWidth = 3; // 1.5倍の3に変更
+                    ctx.setLineDash([]); // 実線に戻す
+                    ctx.moveTo(xMin, y);
+                    ctx.lineTo(xMax, y);
+                    ctx.stroke();
+                }
+            });
+            
+            ctx.setLineDash([]); // 元に戻す
+            
+            // --- 35年目のローン完済ラインを点線で強調 ---
+            const x35 = scaleX(34);
+            const VLINE_FONT_SIZE = 10 * 1.5; // 1.5倍
+            const VLINE_Y_POS = yMin - 25; // ラベルのY座標
+            
+            ctx.beginPath();
+            ctx.strokeStyle = tailwind.config.theme.extend.colors.loan;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 3]);
+            ctx.moveTo(x35, yMin);
+            ctx.lineTo(x35, yMax);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = tailwind.config.theme.extend.colors.loan;
+            ctx.textAlign = 'center';
+            ctx.font = `bold ${VLINE_FONT_SIZE}px Inter, sans-serif`; 
+            
+            // ローン完済 (35年) を二段表示
+            ctx.fillText('ローン完済', x35, VLINE_Y_POS - VLINE_FONT_SIZE / 2);
+            ctx.fillText('(35年)', x35, VLINE_Y_POS + VLINE_FONT_SIZE / 2);
+            
+            // --- 50年目の建て替え検討時期ラインを点線で強調 ---
+            if (REBUILDING_INDEX < TOTAL_YEARS) {
+                const x50 = scaleX(REBUILDING_INDEX);
+                ctx.beginPath();
+                ctx.strokeStyle = '#6b7280'; // グレー
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 3]);
+                ctx.moveTo(x50, yMin);
+                ctx.lineTo(x50, yMax);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#6b7280';
+                ctx.textAlign = 'center';
+                ctx.font = `bold ${VLINE_FONT_SIZE}px Inter, sans-serif`; 
+                
+                // 建て替え検討 (50年) を二段表示
+                ctx.fillText('建て替え検討', x50, VLINE_Y_POS - VLINE_FONT_SIZE / 2);
+                ctx.fillText('(50年)', x50, VLINE_Y_POS + VLINE_FONT_SIZE / 2);
+            }
+            ctx.font = '10px Inter, sans-serif'; // 元に戻す
+        }
+        
+        /**
+         * 特別経費のマークを描画する
+         * @param {number} currentYear - 現在のアニメーション年 (1 to 60)
+         */
+        function drawExpenseMarks(currentYear) {
+            const color = tailwind.config.theme.extend.colors.expense;
+
+            expenseMarks.forEach(mark => {
+                if (mark.year <= currentYear) {
+                    const x = mark.x;
+                    const y = mark.y;
+                    const label = mark.label;
+                    
+                    // ▲マークの描画
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y - 8); // 上向き三角形の頂点
+                    ctx.lineTo(x - 5, y + 2); // 左下
+                    ctx.lineTo(x + 5, y + 2); // 右下
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // ラベルの描画
+                    ctx.font = 'bold 10px Inter, sans-serif';
+                    ctx.textAlign = 'right'; // ▲の左横に配置するため右寄せ
+                    ctx.textBaseline = 'middle'; // 縦軸中央に配置
+                    ctx.fillStyle = color;
+                    
+                    // 白い枠線
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.lineWidth = 3; 
+                    // ▲の左横（x - 10）にラベルを配置
+                    ctx.strokeText(label, x - 10, y);
+                    
+                    // ラベルの塗りつぶし
+                    ctx.fillText(label, x - 10, y);
+                }
+            });
+        }
+
+
+        /**
+         * 単一のデータ系列（折れ線）を描画する
+         * @param {object} keyMap - データキー、ラベル、色の情報
+         * @param {number} interpolatedIndex - 現在のアニメーションの浮動小数点インデックス (0 to TOTAL_YEARS - 1)
+         */
+        function drawLine(keyMap, interpolatedIndex) {
+            const indexInt = Math.floor(interpolatedIndex);
+            const t = interpolatedIndex - indexInt; // 補間比率 (0.0 - 1.0)
+
+            ctx.beginPath();
+            
+            ctx.strokeStyle = keyMap.color;
+            // 累積収支のみ太くする (7に変更)
+            ctx.lineWidth = keyMap.key === '累積収支_万円' ? 7 : 3; 
+            
+            // 最初のポイントへ移動
+            const x0 = scaleX(0);
+            const y0 = scaleY(simulationData[0][keyMap.key]);
+            ctx.moveTo(x0, y0);
+            
+            let lastX = 0;
+            let lastY = 0;
+            let drawEndIndex = indexInt;
+            
+            // 確定したポイントを描画
+            for (let i = 1; i <= drawEndIndex; i++) {
+                const x = scaleX(i);
+                const y = scaleY(simulationData[i][keyMap.key]);
+                
+                // ローン残債がゼロになったら、その点（i）まで描画し、ループを抜ける
+                if (keyMap.key === 'ローン残債_万円' && simulationData[i][keyMap.key] === 0) {
+                    ctx.lineTo(x, y); // ゼロになった点まで描画
+                    lastX = x;
+                    lastY = y;
+                    ctx.stroke();
+                    
+                    // ループを抜ける
+                    break;
+                }
+                
+                // 累積支出（特別経費マーク）の描画は別途行うため、ここで stroke は呼ばない
+                ctx.lineTo(x, y);
+            }
+            
+            // 現在のフレームの補間ポイントを描画 (indexInt < TOTAL_YEARS - 1 の場合のみ)
+            if (indexInt < TOTAL_YEARS - 1) {
+                const dataPrev = simulationData[indexInt];
+                const dataNext = simulationData[indexInt + 1];
+                
+                // ローン残債がすでにゼロの場合は補間描画をスキップ
+                if (keyMap.key === 'ローン残債_万円' && dataPrev[keyMap.key] === 0) {
+                    // 描画はしないが、最後の位置は完済点とする
+                    lastX = loanEndPos.x; 
+                    lastY = loanEndPos.y;
+                } else {
+                    const xPrev = scaleX(indexInt);
+                    const xNext = scaleX(indexInt + 1);
+                    
+                    // 線形補間
+                    const valueCurrent = dataPrev[keyMap.key] * (1 - t) + dataNext[keyMap.key] * t;
+                    
+                    lastX = xPrev * (1 - t) + xNext * t;
+                    lastY = scaleY(valueCurrent);
+                    
+                    // 確定した最後のポイントから補間されたポイントへ描画
+                    ctx.lineTo(lastX, lastY);
+                }
+            } else if (TOTAL_YEARS > 0) {
+                // アニメーション終了時 (最後のデータポイントを使用)
+                lastX = scaleX(TOTAL_YEARS - 1);
+                lastY = scaleY(simulationData[TOTAL_YEARS - 1][keyMap.key]);
+            }
+            
+            // ループ内で stroke が実行されていない場合のみ実行
+            if (keyMap.key !== 'ローン残債_万円' || simulationData[indexInt][keyMap.key] !== 0) {
+                ctx.stroke();
+            }
+
+            // 最終ポイントに点を描画とラベルの付与
+            if (interpolatedIndex >= 0 && lastX > 0) { 
+                
+                // --- ローン残債がゼロになった後のラベル処理 ---
+                if (keyMap.key === 'ローン残債_万円') {
+                    // アニメーションが完済年以降であれば、完済点にラベルを固定
+                    if (interpolatedIndex >= LOAN_END_INDEX) {
+                        lastX = loanEndPos.x;
+                        lastY = loanEndPos.y;
+                    } else if (simulationData[indexInt][keyMap.key] === 0) {
+                         // 描画がゼロで止まった場合は、描画された点に合わせる
+                         lastX = scaleX(LOAN_END_INDEX);
+                         lastY = scaleY(0);
+                    } else if (interpolatedIndex < LOAN_END_INDEX) {
+                        // 完済前は通常通り描画
+                    } else {
+                        // それ以外の場合は描画しない
+                        return;
+                    }
+                }
+                
+                // 点の描画
+                ctx.fillStyle = keyMap.color;
+                ctx.beginPath();
+                // 累積収支のみサイズを1.2倍にする (4.8)
+                const markerSize = keyMap.key === '累積収支_万円' ? 4.8 : 4;
+                ctx.arc(lastX, lastY, markerSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // --- ラベルの描画設定 ---
+                ctx.fillStyle = keyMap.color;
+                
+                // 累積収支は16.8px相当、その他は14.4px相当
+                const baseSize = 12;
+                const profitSize = 14;
+                const scaleFactor = 1.2;
+                const currentFontSize = keyMap.key === '累積収支_万円' ? profitSize * scaleFactor : baseSize * scaleFactor;
+                
+                ctx.font = `bold ${currentFontSize}px Inter, sans-serif`; 
+                ctx.textAlign = 'center';
+                
+                let yOffset = -8; 
+                ctx.textBaseline = 'bottom';
+                
+                // グラフの重なりを避けるための調整
+                if (keyMap.key === '資産価値_万円' || keyMap.key === '累積経費_万円') {
+                    // 資産価値、累計支出を上に配置
+                    yOffset = -20; 
+                    ctx.textBaseline = 'bottom';
+                } else if (keyMap.key === '累積収支_万円') {
+                    // 累積収支を他の項目より少し下に配置 (-10に変更)
+                    yOffset = -10; // 項目ラベルのオフセット
+                    ctx.textBaseline = 'bottom';
+                } else if (keyMap.key === 'ローン残債_万円') {
+                    // ローン残債を下に配置 (ゼロの位置に固定)
+                    yOffset = 5; 
+                    ctx.textBaseline = 'top';
+                } else if (keyMap.key === '累積収入_万円') { // キー名を修正
+                    // 累計収入を下に配置 (さらにオフセットを増やす)
+                    yOffset = 15; // 15pxに調整
+                    ctx.textBaseline = 'top';
+                }
+
+                // 白い枠線の描画
+                ctx.strokeStyle = '#FFFFFF'; // White
+                ctx.lineWidth = 4; // 枠線を太くする
+                ctx.strokeText(keyMap.label, lastX, lastY + yOffset); 
+
+                // ラベルの描画 (塗りつぶし)
+                ctx.fillText(
+                    keyMap.label, 
+                    lastX, 
+                    lastY + yOffset
+                );
+
+                // --- 累積収支の金額ラベルを追加 (マーカーの直下に配置) ---
+                if (keyMap.key === '累積収支_万円') {
+                    const profitValue = simulationData[indexInt]['累積収支_万円'];
+                    const profitColor = profitValue >= 0 ? tailwind.config.theme.extend.colors.income : tailwind.config.theme.extend.colors.profit;
+                    
+                    // 3桁区切りに修正 (整数値に変更)
+                    const amountText = `${formatNumber(profitValue, 0, '万円')}`;
+
+                    ctx.font = `bold ${baseSize * scaleFactor}px Inter, sans-serif`; // 項目ラベルと同じサイズ
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    
+                    // 金額ラベルをマーカーの直下 + マーカーサイズの分だけずらす (4.8 * 1.5 = 7.2)
+                    const amountYPos = lastY + (markerSize * 1.5); 
+                    
+                    // 白い枠線の描画
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.lineWidth = 4;
+                    ctx.strokeText(amountText, lastX, amountYPos); 
+
+                    // 金額ラベルの描画
+                    ctx.fillStyle = profitColor;
+                    ctx.fillText(amountText, lastX, amountYPos);
+                }
+            }
+        }
+
+        // ----------------------------------------------------
+        // 4. アニメーションループと制御
+        // ----------------------------------------------------
+
+        /**
+         * アニメーションのフレーム処理
+         */
+        function animate(timestamp) {
+            if (isPlaying && startTime === null) {
+                // 再生開始時または一時停止からの再開時
+                startTime = timestamp - (currentProgress * ANIMATION_DURATION);
+            }
+
+            if (isPlaying) {
+                const elapsed = timestamp - startTime;
+                currentProgress = Math.min(1, elapsed / ANIMATION_DURATION);
+                
+                // プログレスバーを更新
+                progressBar.value = currentProgress * 100;
+
+                if (currentProgress >= 1) {
+                    isPlaying = false;
+                    currentProgress = 1;
+                    progressBar.value = 100;
+                    updatePlayPauseButton();
+                }
+            }
+            
+            const interpolatedIndex = currentProgress * (TOTAL_YEARS - 1); 
+            const currentYearIndex = Math.floor(interpolatedIndex);
+            const currentYear = currentYearIndex + 1;
+            const t = interpolatedIndex - currentYearIndex;
+            
+            let dataForStatus;
+            if (currentYearIndex < TOTAL_YEARS - 1) {
+                const dataPrev = simulationData[currentYearIndex];
+                const dataNext = simulationData[currentYearIndex + 1];
+                dataForStatus = {};
+                for (const key of Object.keys(dataPrev)) {
+                    if (typeof dataPrev[key] === 'number' && key !== 'サブリース料率' && key !== '年間ローン返済_万円' && key !== '年間家賃収入_万円' && key !== '年間特別経費_万円') { 
+                        dataForStatus[key] = dataPrev[key] * (1 - t) + dataNext[key] * t;
+                    } else {
+                        dataForStatus[key] = dataPrev[key]; 
+                    }
+                }
+            } else {
+                dataForStatus = simulationData[TOTAL_YEARS - 1];
+            }
+
+
+            drawAxes();
+            dataKeys.forEach(keyMap => {
+                drawLine(keyMap, interpolatedIndex);
+            });
+            drawExpenseMarks(currentYear);
+
+
+            updateStatus(dataForStatus, currentYearIndex);
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+        
+        /**
+         * 再生/一時停止の状態を切り替える
+         */
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            updatePlayPauseButton();
+            if (isPlaying) {
+                startTime = null; // 次のフレームでstartTimeをリセットし、現在地から再開
+                animationFrameId = requestAnimationFrame(animate);
+            } else {
+                // 一時停止時は、アニメーションループは止めずに、isPlayingフラグで制御
+            }
+        }
+        
+        /**
+         * プログレスバーの値に基づいてアニメーションをシークする
+         * @param {number} value - プログレスバーの値 (0 to 100)
+         */
+        function seekAnimation(value) {
+            currentProgress = value / 100;
+            startTime = null; // シーク時はstartTimeを無効化
+            
+            // 再生中でなければ、手動で一度描画を呼び出す
+            if (!isPlaying) {
+                 // 強制的に1フレーム描画して、スライダー操作に追従させる
+                const interpolatedIndex = currentProgress * (TOTAL_YEARS - 1); 
+                const currentYearIndex = Math.floor(interpolatedIndex);
+                const t = interpolatedIndex - currentYearIndex;
+                
+                let dataForStatus;
+                if (currentYearIndex < TOTAL_YEARS - 1) {
+                    const dataPrev = simulationData[currentYearIndex];
+                    const dataNext = simulationData[currentYearIndex + 1];
+                    dataForStatus = {};
+                    for (const key of Object.keys(dataPrev)) {
+                        if (typeof dataPrev[key] === 'number' && key !== 'サブリース料率' && key !== '年間ローン返済_万円' && key !== '年間家賃収入_万円' && key !== '年間特別経費_万円') { 
+                            dataForStatus[key] = dataPrev[key] * (1 - t) + dataNext[key] * t;
+                        } else {
+                            dataForStatus[key] = dataPrev[key]; 
+                        }
+                    }
+                } else {
+                    dataForStatus = simulationData[TOTAL_YEARS - 1];
+                }
+
+                drawAxes();
+                dataKeys.forEach(keyMap => {
+                    drawLine(keyMap, interpolatedIndex);
+                });
+                drawExpenseMarks(currentYearIndex + 1);
+                updateStatus(dataForStatus, currentYearIndex);
+            }
+        }
+
+        /**
+         * 再生/一時停止ボタンのアイコンを更新する
+         */
+        function updatePlayPauseButton() {
+            if (isPlaying && currentProgress < 1) {
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+            } else {
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+            }
+        }
+
+
+        // ----------------------------------------------------
+        // 5. ステータスと凡例の更新
+        // ----------------------------------------------------
+        
+        /**
+         * 年間収支構成要素のテーブルを生成し、DOMに挿入する (新規追加)
+         */
+        function setupAnnualMetricsTable() {
+            const container = document.getElementById('annualMetricsItems');
+            // mdサイズ以上で2列、それ以下では1列にするため grid-cols-2 のクラスはDOMに直接設定
+            container.innerHTML = annualMetricsKeys.map(item => `
+                <div class="flex flex-col p-2 bg-white rounded-lg border">
+                    <span class="text-xs font-medium text-gray-500">${item.label}</span>
+                    <span id="${item.key.replace('_万円', 'AnnualValue')}" class="text-lg font-bold text-gray-900">
+                        0.0 ${item.format}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+
+        /**
+         * 凡例を生成し、DOMに挿入する
+         */
+        function setupLegend() {
+            const container = document.getElementById('legendItems');
+            // mdサイズ以上で2列、それ以下では1列にするため grid-cols-2 のクラスはDOMに直接設定
+            container.innerHTML = dataKeys.map(item => `
+                <div class="flex items-center space-x-2 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition duration-150">
+                    <span class="w-3 h-3 rounded-full" style="background-color: ${item.color}"></span>
+                    <span class="text-sm font-medium text-gray-700">${item.label}</span>
+                    <span id="${item.key.replace('_万円', 'Value')}" class="text-sm font-semibold text-gray-900 ml-auto">0.0万円</span>
+                </div>
+            `).join('');
+        }
+
+        /**
+         * 現在の年と各項目の値を更新する
+         * @param {object} data - 補間された現在のデータオブジェクト
+         * @param {number} currentYearIndex - 現在の年インデックス (0 to 59)
+         */
+        function updateStatus(data, currentYearIndex) {
+            const currentYearElement = document.getElementById('currentYear');
+            const profitStatusElement = document.getElementById('profitStatus');
+            
+            const currentYear = currentYearIndex + 1;
+
+            // 現在の年数を表示 (1年目から60年目まで)
+            currentYearElement.textContent = formatNumber(Math.min(currentYear, TOTAL_YEARS), 0, '');
+            
+            // 累積収支のステータス表示
+            const profit = data['累積収支_万円'];
+            const yearsToCrossover = BLACK_CROSSOVER_YEAR - currentYear; // 黒字化までの残り年数
+            
+            let statusText;
+            // 累積値は整数表示 (decimal: 0)
+            const formattedProfit = formatNumber(Math.abs(profit), 0, '万円');
+            
+            if (profit >= 0) {
+                // 累積黒字達成済みの場合
+                const yearsSinceCrossover = currentYear - BLACK_CROSSOVER_YEAR;
+                statusText = `累積黒字：${formattedProfit} (黒字化から${yearsSinceCrossover}年)`; 
+                profitStatusElement.classList.add('text-income');
+                profitStatusElement.classList.remove('text-expense');
+            } else {
+                // 累積赤字の場合
+                statusText = `累積赤字：-${formattedProfit} (黒字化まで後${yearsToCrossover}年)`;
+                profitStatusElement.classList.add('text-expense');
+                profitStatusElement.classList.remove('text-income');
+            }
+            
+            profitStatusElement.textContent = statusText;
+            
+            // 累積値の更新
+            dataKeys.forEach(item => {
+                const valueElement = document.getElementById(item.key.replace('_万円', 'Value'));
+                if (valueElement) {
+                    const value = data[item.key];
+                    // 累積値は整数表示
+                    valueElement.textContent = `${formatNumber(value, item.decimal, '万円')}`; 
+                    // 収支は色を変える
+                    if (item.key === '累積収支_万円') {
+                        valueElement.style.color = profit >= 0 ? tailwind.config.theme.extend.colors.income : tailwind.config.theme.extend.colors.profit; // 黒字時は緑、赤字時は設定した赤
+                    }
+                }
+            });
+            
+            // 年間収支構成要素の更新 (新規追加)
+            annualMetricsKeys.forEach(item => {
+                const element = document.getElementById(item.key.replace('_万円', 'AnnualValue'));
+                if (element) {
+                    let value = data[item.key];
+                    let formattedValue;
+
+                    if (item.format === '%') {
+                        // 料率はパーセンテージで表示
+                        formattedValue = formatNumber(value * 100, item.decimal, item.format); // 小数点第一位に変更
+                    } else if (item.format === '万円') {
+                        // 万円は小数点第一位まで
+                        formattedValue = formatNumber(value, item.decimal, item.format); // 3桁区切りと小数点第一位に変更
+                    }
+                    
+                    element.textContent = formattedValue;
+                    
+                    // 年間CFのプラス・マイナスで色を変更
+                    if (item.isCF) {
+                        element.style.color = value >= 0 ? tailwind.config.theme.extend.colors.income : tailwind.config.theme.extend.colors.expense;
+                    } else {
+                        element.style.color = 'black';
+                    }
+                }
+            });
+
+        }
+
+        // ----------------------------------------------------
+        // 6. 初期化とイベントハンドラ
+        // ----------------------------------------------------
+
+        /**
+         * アプリケーションの初期化
+         */
+        function initialize() {
+            // アニメーションフレームをキャンセル（念のため）
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+
+            setCanvasSize();
+            setupLegend();
+            setupAnnualMetricsTable(); // 年間収支テーブルの初期化を追加
+            drawAxes();
+            
+            // 初期状態を設定
+            isPlaying = true;
+            currentProgress = 0;
+            progressBar.value = 0;
+            updatePlayPauseButton();
+
+            // 初期値をシミュレーションデータの一番最初の値で設定
+            updateStatus(simulationData[0], 0); 
+            
+            // アニメーション開始
+            startTime = null;
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        // --- イベントリスナー設定 ---
+        
+        // 再生/一時停止ボタン
+        document.getElementById('playPauseButton').addEventListener('click', togglePlayPause);
+        
+        // プログレスバーのドラッグ（入力中）
+        progressBar.addEventListener('input', (e) => {
+            if (isPlaying) {
+                // 再生中に操作されたら一時停止
+                togglePlayPause();
+            }
+            seekAnimation(e.target.value);
+        });
+
+        // プログレスバーのドロップ/確定（値確定時）
+        progressBar.addEventListener('change', (e) => {
+            seekAnimation(e.target.value);
+        });
+
+
+        // ウィンドウサイズ変更時にグラフをリサイズ
+        window.addEventListener('resize', () => {
+            // リサイズ時も現在のプログレスを維持
+            const savedProgress = currentProgress;
+            initialize(); 
+            // 強制的にシークして現在の位置に戻す
+            seekAnimation(savedProgress * 100);
+            if (!isPlaying) {
+                // 一時停止状態を維持
+                togglePlayPause(); 
+            }
+        });
+        
+        // ページロード時に初期化
+        window.onload = initialize;
+
+    </script>
+</body>
+</html>
