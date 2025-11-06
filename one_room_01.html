@@ -15,7 +15,6 @@
             padding-bottom: 75%; /* 4:3のアスペクト比 (高さ = 幅 * 0.75) */
             height: 0;
             overflow: hidden;
-            /* max-width: 1200px; */ /* 親要素に max-w-4xlがあるため不要 */
             margin: 0 auto;
         }
         canvas {
@@ -73,6 +72,68 @@
             background-color: #059669;
         }
         
+        /* --- イベントアニメーション用スタイル --- */
+        #eventOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none; /* 下のグラフ操作を妨げない */
+            /* 修正: 半透明の黒い背景とブラーを追加 */
+            background-color: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            z-index: 10; /* Canvasの上に配置 */
+        }
+
+        .event-modal { /* event-message から event-modal に変更 */
+            padding: 1.5rem 3rem; 
+            background-color: #FFFFFF;
+            color: #1F2937; /* 濃いグレーのテキスト */
+            border: 5px solid #6b7280; /* 太い灰色の枠線 */
+            
+            font-size: 2.5rem;
+            font-weight: bold;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: scale(0.5); /* ポップインの初期状態 (小さく) */
+            /* 修正: transformの時間を0.2sに短縮 */
+            transition: opacity 0.3s ease, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* バウンス効果 */
+            pointer-events: auto; /* メッセージ自体はクリック可能にする */
+            text-align: center; /* テキストを中央揃え */
+            max-width: 600px; /* モーダル幅を制限 */
+        }
+        .event-modal h3 {
+            font-size: 2.5rem; /* タイトルサイズ */
+            margin-bottom: 0.5rem;
+            color: #3B82F6; /* イベントタイトルを青色で強調 */
+        }
+        .event-modal p {
+            font-size: 1.1rem; /* 詳細サイズを調整 */
+            font-weight: normal;
+            color: #4B5563; /* 詳細のテキスト色を少し薄く */
+            line-height: 1.6;
+        }
+
+        .event-modal.active {
+            opacity: 1;
+            transform: scale(1); /* ポップイン */
+        }
+        /* イベントオーバーレイの初期状態は非表示 */
+        #eventOverlay.hidden {
+            display: none;
+        }
+        /* レスポンシブレイアウト */
+        @media (max-width: 1080px) {
+            .lg\:grid-cols-7 {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
     <script>
         tailwind.config = {
@@ -92,8 +153,7 @@
 </head>
 <body class="p-4 sm:p-8">
 
-    <div class="max-w-6xl mx-auto"> <!-- 最大幅を広げ、横並びを活かす -->
-        <header class="text-center mb-8">
+    <div class="max-w-6xl mx-auto"> <!-- 最大幅を広げ、横並びを活かす --><header class="text-center mb-8">
             <h1 class="3xl sm:text-4xl font-extrabold text-gray-800 mb-2">
                 蔵前ワンルーム投資 60年間 詳細シミュレーション
             </h1>
@@ -102,21 +162,22 @@
             </p>
         </header>
 
-        <!-- Main Content Grid: lgサイズ以上で2カラムレイアウトに -->
-        <div class="grid grid-cols-1 lg:grid-cols-7 gap-6">
+        <!-- Main Content Grid: lgサイズ以上で2カラムレイアウトに --><div class="grid grid-cols-1 lg:grid-cols-7 gap-6">
 
-            <!-- Column 1: Chart and Controls (4/7幅) -->
-            <div class="lg:col-span-4 flex flex-col">
-                <!-- グラフ描画エリア -->
-                <div class="chart-container rounded-xl shadow-2xl flex-grow">
+            <!-- Column 1: Chart and Controls (4/7幅) --><div class="lg:col-span-4 flex flex-col">
+                <!-- グラフ描画エリア --><div class="chart-container rounded-xl shadow-2xl flex-grow">
                     <canvas id="investmentChart"></canvas>
+                    <!-- イベント表示用オーバーレイ --><!-- 修正: 初期状態で非表示にするため hidden クラスを付与 --><div id="eventOverlay" class="hidden"> 
+                        <!-- event-message を event-modal に変更し、子要素としてタイトルと詳細を持たせる --><div id="eventMessage" class="event-modal">
+                            <h3 id="eventTitle"></h3>
+                            <p id="eventDetail"></p>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- 操作パネル (再生ボタンとプログレスバー) -->
-                <div class="flex items-center space-x-4 mt-6 p-4 bg-white rounded-xl shadow-lg border border-gray-100">
+                <!-- 操作パネル (再生ボタンとプログレスバー) --><div class="flex items-center space-x-4 mt-6 p-4 bg-white rounded-xl shadow-lg border border-gray-100">
                     <button id="playPauseButton">
-                        <!-- SVGアイコン (Play/Pause) -->
-                        <svg id="playIcon" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6">
+                        <!-- SVGアイコン (Play/Pause) --><svg id="playIcon" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
                         </svg>
                         <svg id="pauseIcon" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6 hidden">
@@ -127,10 +188,8 @@
                 </div>
             </div>
 
-            <!-- Column 2: Legend and Metrics (3/7幅) -->
-            <div id="legendContainer" class="lg:col-span-3 mt-8 lg:mt-0 p-6 bg-white rounded-xl shadow-lg border border-gray-100">
-                <!-- タイトル「グラフ凡例と現在値」を削除しました -->
-                <div id="statusDisplay" class="mb-4 text-center">
+            <!-- Column 2: Legend and Metrics (3/7幅) --><div id="legendContainer" class="lg:col-span-3 mt-8 lg:mt-0 p-6 bg-white rounded-xl shadow-lg border border-gray-100">
+                <!-- タイトル「グラフ凡例と現在値」を削除しました --><div id="statusDisplay" class="mb-4 text-center">
                     <p class="text-2xl font-semibold text-gray-900">
                         <span id="currentYear" class="text-asset">0</span> 年目 
                         <span class="text-sm font-medium text-gray-500">(累積黒字化 89年目)</span>
@@ -139,17 +198,14 @@
                     
                 </div>
                 <div id="legendItems" class="grid grid-cols-2 gap-4">
-                    <!-- 凡例アイテムはJSで動的に挿入されます -->
-                </div>
+                    <!-- 凡例アイテムはJSで動的に挿入されます --></div>
                 
-                <!-- 新規追加: 年間収支構成テーブル -->
-                <div id="annualMetrics" class="mt-6">
+                <!-- 新規追加: 年間収支構成テーブル --><div id="annualMetrics" class="mt-6">
                     <h3 class="text-lg font-semibold text-gray-700 mb-3 border-t pt-3">
                         年間収支の構成要素（現在年）
                     </h3>
                     <div class="grid grid-cols-2 gap-4" id="annualMetricsItems">
-                        <!-- 年間メトリックアイテムはJSで動的に挿入されます -->
-                    </div>
+                        <!-- 年間メトリックアイテムはJSで動的に挿入されます --></div>
                 </div>
                 
             </div>
@@ -343,7 +399,17 @@
         // 特別経費の描画情報を保持する配列
         const expenseMarks = [];
 
-
+        // ★ 修正: 1年目のイベントを削除
+        const EVENTS = [
+            {
+                year: 35,
+                title: 'ローン返済完了！',
+                detail: '毎月のローン返済金額が0円になり支出が低下します',
+                duration: 1000, // 1秒
+                triggered: false
+            }
+        ];
+        
         // ----------------------------------------------------
         // 2. グラフ描画定数と初期設定 
         // ----------------------------------------------------
@@ -353,6 +419,11 @@
         const progressBar = document.getElementById('progressBar');
         const playIcon = document.getElementById('playIcon');
         const pauseIcon = document.getElementById('pauseIcon');
+        const eventMessage = document.getElementById('eventMessage');
+        const eventTitle = document.getElementById('eventTitle'); // イベントタイトル
+        const eventDetail = document.getElementById('eventDetail'); // イベント詳細
+        const eventOverlay = document.getElementById('eventOverlay'); 
+
 
         let width, height;
 
@@ -364,7 +435,7 @@
         // Y軸の最大値 (累積家賃収入の最大値に合わせて5000万円に設定)
         const Y_MAX_VALUE = 5000;
         // アニメーション時間 (ミリ秒)
-        const ANIMATION_DURATION = 50000; 
+        const ANIMATION_DURATION = 10000; // 10秒に設定
         // データポイント数 (年数)
         const TOTAL_YEARS = simulationData.length;
         
@@ -376,9 +447,13 @@
         const REBUILDING_INDEX = REBUILDING_YEAR - 1;
         
         // ローン完済点 (35年目) のインデックス
-        const LOAN_END_INDEX = 34;
+        const LOAN_END_YEAR = 35;
+        const LOAN_END_INDEX = LOAN_END_YEAR - 1;
         // ローン完済時のX, Y座標を保持するための変数
         let loanEndPos = { x: 0, y: 0 };
+        
+        // --- イベント状態管理 ---
+        let isEventActive = false; 
 
 
         let startTime = null;
@@ -549,7 +624,7 @@
             ctx.setLineDash([]); // 元に戻す
             
             // --- 35年目のローン完済ラインを点線で強調 ---
-            const x35 = scaleX(34);
+            const x35 = scaleX(LOAN_END_INDEX);
             const VLINE_FONT_SIZE = 10 * 1.5; // 1.5倍
             const VLINE_Y_POS = yMin - 25; // ラベルのY座標
             
@@ -817,34 +892,96 @@
         // ----------------------------------------------------
 
         /**
+         * イベントメッセージを表示する
+         * @param {object} event - イベントオブジェクト
+         */
+        function showEventMessage(event) {
+            isPlaying = false;
+            isEventActive = true; // ★ 修正: イベント実行中フラグをON
+            
+            // アニメーションループを明示的に停止
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            
+            // データ取得と詳細メッセージ生成
+            const dataForStatus = simulationData[event.year - 1]; // 1年目ならインデックス0
+            const detailContent = typeof event.detail === 'function' ? event.detail(dataForStatus) : event.detail;
+
+            eventTitle.textContent = event.title;
+            eventDetail.innerHTML = detailContent; 
+            eventOverlay.classList.remove('hidden'); // オーバーレイを表示
+            eventMessage.classList.remove('hidden');
+            
+            // ポップインアニメーションを開始
+            setTimeout(() => {
+                eventMessage.classList.add('active');
+            }, 50); 
+            
+            // 指定時間後に非表示にし、再生を再開
+            setTimeout(() => {
+                eventMessage.classList.remove('active');
+                // アニメーション完了を待ってからDOMを隠す
+                setTimeout(() => {
+                    eventMessage.classList.add('hidden');
+                    eventOverlay.classList.add('hidden'); // オーバーレイを非表示
+                    isEventActive = false; // ★ 修正: イベント実行中フラグをOFF
+
+                    // ★ 修正: 1年目イベント終了時、プログレスを強制的に2年目の開始位置に進める
+                    if (event.year === 1) {
+                        const indexAfterEvent = event.year; // 2年目 (インデックス 1)
+                        currentProgress = indexAfterEvent / (TOTAL_YEARS - 1); 
+                        progressBar.value = currentProgress * 100;
+                    }
+                    
+                    // 再生を再開
+                    togglePlayPause(true); 
+                }, 500); // CSSのtransition時間と同じ
+            }, event.duration); 
+        }
+        
+        /**
          * アニメーションのフレーム処理
          */
         function animate(timestamp) {
-            if (isPlaying && startTime === null) {
-                // 再生開始時または一時停止からの再開時
+            // isPlayingがfalseの場合は描画のみ行い、再帰呼び出しは行わない
+            if (!isPlaying && animationFrameId) {
+                // 一時停止状態だが描画を更新したい場合（シーク操作など）
+                drawAxes();
+                const interpolatedIndex = currentProgress * (TOTAL_YEARS - 1);
+                const currentYearIndex = Math.floor(interpolatedIndex);
+                const currentYear = currentYearIndex + 1;
+
+                dataKeys.forEach(keyMap => {
+                    drawLine(keyMap, interpolatedIndex);
+                });
+                drawExpenseMarks(currentYear);
+                
+                // 停止状態ではrequestAnimationFrameは呼ばず、描画を維持
+                return;
+            } else if (!isPlaying) {
+                 // 完全に停止状態（初期化直後、イベント中など）
+                 return;
+            }
+            
+            // 再生中 (isPlaying === true)
+            if (startTime === null) {
                 startTime = timestamp - (currentProgress * ANIMATION_DURATION);
             }
 
-            if (isPlaying) {
-                const elapsed = timestamp - startTime;
-                currentProgress = Math.min(1, elapsed / ANIMATION_DURATION);
-                
-                // プログレスバーを更新
-                progressBar.value = currentProgress * 100;
-
-                if (currentProgress >= 1) {
-                    isPlaying = false;
-                    currentProgress = 1;
-                    progressBar.value = 100;
-                    updatePlayPauseButton();
-                }
-            }
+            let elapsed = timestamp - startTime;
+            currentProgress = Math.min(1, elapsed / ANIMATION_DURATION);
+            
+            // プログレスバーを更新
+            progressBar.value = currentProgress * 100;
             
             const interpolatedIndex = currentProgress * (TOTAL_YEARS - 1); 
             const currentYearIndex = Math.floor(interpolatedIndex);
             const currentYear = currentYearIndex + 1;
             const t = interpolatedIndex - currentYearIndex;
             
+            // --- dataForStatus の計算 ---
             let dataForStatus;
             if (currentYearIndex < TOTAL_YEARS - 1) {
                 const dataPrev = simulationData[currentYearIndex];
@@ -852,7 +989,7 @@
                 dataForStatus = {};
                 for (const key of Object.keys(dataPrev)) {
                     if (typeof dataPrev[key] === 'number' && key !== 'サブリース料率' && key !== '年間ローン返済_万円' && key !== '年間家賃収入_万円' && key !== '年間特別経費_万円') { 
-                        dataForStatus[key] = dataPrev[key] * (1 - t) + dataNext[key] * t;
+                            dataForStatus[key] = dataPrev[key] * (1 - t) + dataNext[key] * t;
                     } else {
                         dataForStatus[key] = dataPrev[key]; 
                     }
@@ -860,31 +997,101 @@
             } else {
                 dataForStatus = simulationData[TOTAL_YEARS - 1];
             }
+            // -----------------------------
 
+            // --- イベントチェック (EVENTS配列を走査) ---
+            for(let i = 0; i < EVENTS.length; i++) {
+                const event = EVENTS[i];
+                // currentYearがイベント年に到達し、かつ未トリガーの場合
+                // 進行度が次の年に少しでも進む前にチェックする
+                if (currentYear >= event.year && !event.triggered) {
+                    event.triggered = true;
+                    
+                    // 正確な年で一時停止するために、進捗を強制的に固定
+                    currentProgress = (event.year - 1) / (TOTAL_YEARS - 1);
+                    progressBar.value = currentProgress * 100;
 
+                    showEventMessage(event); 
+                    // イベント表示中は requestAnimationFrame は呼ばないため return
+                    return;
+                }
+            }
+            
+            // 通常の描画
             drawAxes();
             dataKeys.forEach(keyMap => {
                 drawLine(keyMap, interpolatedIndex);
             });
             drawExpenseMarks(currentYear);
 
-
             updateStatus(dataForStatus, currentYearIndex);
-
-            animationFrameId = requestAnimationFrame(animate);
+            
+            if (currentProgress >= 1) {
+                isPlaying = false;
+                currentProgress = 1;
+                progressBar.value = 100;
+                updatePlayPauseButton();
+            } else {
+                animationFrameId = requestAnimationFrame(animate);
+            }
         }
         
         /**
          * 再生/一時停止の状態を切り替える
+         * @param {boolean} forcePlay - trueの場合、強制的に再生を開始する
          */
-        function togglePlayPause() {
-            isPlaying = !isPlaying;
+        function togglePlayPause(forcePlay = false) {
+            // ★ 修正: イベントアクティブ中は手動操作を無視
+            if (!forcePlay && isEventActive) {
+                return;
+            }
+
+            if (forcePlay) {
+                isPlaying = true;
+            } else {
+                isPlaying = !isPlaying;
+            }
+            
             updatePlayPauseButton();
             if (isPlaying) {
-                startTime = null; // 次のフレームでstartTimeをリセットし、現在地から再開
+                // 再生再開時にstartTimeをリセットし、現在地から再計算
+                startTime = null; 
+                
+                // 1年目イベントは削除されたため、特別な初期チェックは不要になりました。
+                
                 animationFrameId = requestAnimationFrame(animate);
             } else {
-                // 一時停止時は、アニメーションループは止めずに、isPlayingフラグで制御
+                // 一時停止
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+                // 一時停止した位置で画面を更新（シーク動作がない場合）
+                const interpolatedIndex = currentProgress * (TOTAL_YEARS - 1);
+                const currentYearIndex = Math.floor(interpolatedIndex);
+                const t = interpolatedIndex - currentYearIndex;
+                
+                let dataForStatus;
+                if (currentYearIndex < TOTAL_YEARS - 1) {
+                    const dataPrev = simulationData[currentYearIndex];
+                    const dataNext = simulationData[currentYearIndex + 1];
+                    dataForStatus = {};
+                    for (const key of Object.keys(dataPrev)) {
+                        if (typeof dataPrev[key] === 'number' && key !== 'サブリース料率' && key !== '年間ローン返済_万円' && key !== '年間家賃収入_万円' && key !== '年間特別経費_万円') { 
+                            dataForStatus[key] = dataPrev[key] * (1 - t) + dataNext[key] * t;
+                        } else {
+                            dataForStatus[key] = dataPrev[key]; 
+                        }
+                    }
+                } else {
+                    dataForStatus = simulationData[TOTAL_YEARS - 1];
+                }
+                drawAxes();
+                dataKeys.forEach(keyMap => {
+                    drawLine(keyMap, interpolatedIndex);
+                });
+                drawExpenseMarks(currentYearIndex + 1);
+                updateStatus(dataForStatus, currentYearIndex);
             }
         }
         
@@ -893,11 +1100,27 @@
          * @param {number} value - プログレスバーの値 (0 to 100)
          */
         function seekAnimation(value) {
+            // ★ 修正: イベントアクティブ中は操作を無視
+            if (isEventActive) return;
+
             currentProgress = value / 100;
             startTime = null; // シーク時はstartTimeを無効化
             
+            const wasPlaying = isPlaying;
+            
+            // イベントトリガーのリセットチェック
+            const seekYear = Math.floor(currentProgress * (TOTAL_YEARS - 1)) + 1;
+            
+            // イベントトリガーのリセット
+            EVENTS.forEach(event => {
+                // 巻き戻した場合にtriggeredフラグをリセット
+                if (seekYear < event.year) {
+                    event.triggered = false;
+                }
+            });
+
             // 再生中でなければ、手動で一度描画を呼び出す
-            if (!isPlaying) {
+            if (!wasPlaying) {
                  // 強制的に1フレーム描画して、スライダー操作に追従させる
                 const interpolatedIndex = currentProgress * (TOTAL_YEARS - 1); 
                 const currentYearIndex = Math.floor(interpolatedIndex);
@@ -1065,7 +1288,7 @@
          * アプリケーションの初期化
          */
         function initialize() {
-            // アニメーションフレームをキャンセル（念のため）
+            // 既存のアニメーションがあればキャンセル
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
             }
@@ -1076,26 +1299,53 @@
             drawAxes();
             
             // 初期状態を設定
-            isPlaying = true;
+            isPlaying = false; // 初期状態では一時停止
             currentProgress = 0;
             progressBar.value = 0;
             updatePlayPauseButton();
+            
+            // イベント状態の初期化
+            EVENTS.forEach(event => event.triggered = false);
+            isEventActive = false; 
 
             // 初期値をシミュレーションデータの一番最初の値で設定
             updateStatus(simulationData[0], 0); 
             
             // アニメーション開始
             startTime = null;
-            animationFrameId = requestAnimationFrame(animate);
+            
+            // 初回ロード時、グラフは停止した状態で1年目のデータを描画
+            drawAxes();
+            dataKeys.forEach(keyMap => {
+                drawLine(keyMap, 0);
+            });
+            drawExpenseMarks(1);
+        }
+        
+        /**
+         * 1年目イベントをトリガーする関数（再生開始時）
+         * NOTE: 1年目イベントは削除されましたが、ロジックは残しておきます。
+         */
+        function showInitialEvent(initialEvent) {
+            // この関数は現在使用されていません。
         }
 
         // --- イベントリスナー設定 ---
         
         // 再生/一時停止ボタン
-        document.getElementById('playPauseButton').addEventListener('click', togglePlayPause);
+        document.getElementById('playPauseButton').addEventListener('click', () => {
+            // ★ 修正: イベントアクティブ中は手動操作を無視
+            if (isEventActive) return;
+            
+            // 1年目イベントのチェックは削除されたため、単純に再生/一時停止
+            togglePlayPause();
+        });
         
         // プログレスバーのドラッグ（入力中）
         progressBar.addEventListener('input', (e) => {
+            // ★ 修正: イベントアクティブ中は操作を無視
+            if (isEventActive) return;
+
             if (isPlaying) {
                 // 再生中に操作されたら一時停止
                 togglePlayPause();
@@ -1105,6 +1355,9 @@
 
         // プログレスバーのドロップ/確定（値確定時）
         progressBar.addEventListener('change', (e) => {
+            // ★ 修正: イベントアクティブ中は操作を無視
+            if (isEventActive) return;
+
             seekAnimation(e.target.value);
         });
 
@@ -1113,12 +1366,26 @@
         window.addEventListener('resize', () => {
             // リサイズ時も現在のプログレスを維持
             const savedProgress = currentProgress;
+            const wasPlaying = isPlaying;
+            
+            // イベント状態を保持
+            const savedEventStates = EVENTS.map(e => e.triggered);
+            const savedIsEventActive = isEventActive; 
+
             initialize(); 
+            
+            // イベント状態を復元
+            EVENTS.forEach((event, index) => event.triggered = savedEventStates[index]);
+            isEventActive = savedIsEventActive; 
+
             // 強制的にシークして現在の位置に戻す
             seekAnimation(savedProgress * 100);
-            if (!isPlaying) {
-                // 一時停止状態を維持
-                togglePlayPause(); 
+            if (wasPlaying && !isEventActive) { // イベント中でなければ再生状態を復元
+                // 元の再生状態に戻す
+                togglePlayPause(true); 
+            } else {
+                 // 一時停止状態を維持
+                togglePlayPause(false); 
             }
         });
         
